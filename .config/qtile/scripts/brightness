@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+    up) direction=5 ;;
+    down) direction=-5 ;;
+    *) printf 'usage: %s {up|down}\n' "$0" >&2; exit 2 ;;
+esac
+
+if command -v backlight >/dev/null 2>&1; then
+    if [ "$direction" -gt 0 ]; then
+        exec backlight incr "$direction"
+    fi
+    exec backlight decr "$((-direction))"
+elif command -v xbacklight >/dev/null 2>&1; then
+    if [ "$direction" -gt 0 ]; then
+        exec xbacklight -inc "$direction"
+    fi
+    exec xbacklight -dec "$((-direction))"
+elif command -v light >/dev/null 2>&1; then
+    if [ "$direction" -gt 0 ]; then
+        exec light -A "$direction"
+    fi
+    exec light -U "$((-direction))"
+fi
+
+printf '%s\n' 'No supported brightness utility found.' >&2
+exit 1

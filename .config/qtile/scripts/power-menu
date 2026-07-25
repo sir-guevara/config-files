@@ -73,13 +73,7 @@ case "$choice" in
         ;;
 
     2)
-        if command -v betterlockscreen >/dev/null 2>&1; then
-            betterlockscreen -l
-        elif command -v i3lock >/dev/null 2>&1; then
-            i3lock
-        elif command -v xlock >/dev/null 2>&1; then
-            xlock
-        fi
+        "$HOME/.config/qtile/scripts/lock-screen"
         ;;
 
     3)

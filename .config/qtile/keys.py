@@ -13,6 +13,7 @@ from defaults import (
     APPLICATION_LAUNCHER,
     WINDOW_SWITCHER,
     POWER_MENU,
+    script,
 )
 
 
@@ -31,7 +32,7 @@ keys = [
     Key([MOD], "d", lazy.spawn(APPLICATION_LAUNCHER), desc="Application Launcher"),
 
     Key([MOD], "Tab", lazy.spawn(WINDOW_SWITCHER), desc="Window Switcher"),
-    Key([MOD], "a", lazy.spawn("~/.config/qtile/scripts/quick-settings"), desc="Quick Settings"),
+    Key([MOD], "a", lazy.spawn(script("quick-settings")), desc="Quick Settings"),
 
     # -------------------------------------------------
     # Qtile
@@ -140,12 +141,12 @@ keys = [
     Key(
         [],
         "XF86MonBrightnessUp",
-        lazy.spawn("light -A 5"),
+        lazy.spawn(script("brightness") + " up"),
     ),
 
     Key(
         [],
         "XF86MonBrightnessDown",
-        lazy.spawn("light -U 5"),
+        lazy.spawn(script("brightness") + " down"),
     ),
 ]

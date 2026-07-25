@@ -1,0 +1,36 @@
+[global]
+    monitor = 0
+    follow = keyboard
+    width = 360
+    height = 110
+    origin = top-right
+    offset = 12x50
+    notification_limit = 4
+    padding = 12
+    horizontal_padding = 14
+    frame_width = 1
+    frame_color = "#504945"
+    separator_color = frame
+    corner_radius = 4
+    font = JetBrainsMono Nerd Font 10
+    markup = full
+    format = "<b>%s</b>\n%b"
+    icon_position = left
+    max_icon_size = 42
+    sort = yes
+    idle_threshold = 120
+    timeout = 6
+    background = "#282828"
+    foreground = "#ebdbb2"
+
+[urgency_low]
+    foreground = "#a89984"
+    timeout = 4
+
+[urgency_normal]
+    frame_color = "#d79921"
+
+[urgency_critical]
+    frame_color = "#fb4934"
+    foreground = "#fb4934"
+    timeout = 0

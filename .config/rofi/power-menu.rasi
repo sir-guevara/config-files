@@ -1,0 +1,129 @@
+/* Groovy Gruvbox power dashboard */
+
+* {
+    bg:          #282828;
+    surface:     #32302f;
+    hover:       #3c3836;
+    border:      #504945;
+    fg:          #ebdbb2;
+    muted:       #a89984;
+    accent:      #d79921;
+    urgent:      #fb4934;
+    transparent: #00000000;
+
+    font: "JetBrainsMono Nerd Font 11";
+
+    background-color: @transparent;
+    text-color: @fg;
+}
+
+window {
+    location: center;
+    anchor: center;
+
+    width: 760px;
+    height: 255px;
+
+    padding: 18px;
+
+    border: 1px;
+    border-color: @border;
+    border-radius: 4px;
+
+    background-color: @bg;
+}
+
+mainbox {
+    orientation: vertical;
+    spacing: 14px;
+    padding: 0px;
+
+    children: [ message, listview ];
+
+    background-color: @bg;
+}
+
+message {
+    padding: 0px;
+    border: 0px;
+
+    background-color: @transparent;
+}
+
+textbox {
+    padding: 10px 12px;
+
+    border: 1px;
+    border-color: @accent;
+    border-radius: 4px;
+
+    horizontal-align: 0.0;
+    vertical-align: 0.5;
+
+    text-color: @accent;
+    background-color: @surface;
+}
+
+listview {
+    lines: 1;
+    columns: 5;
+
+    fixed-height: false;
+    fixed-columns: true;
+
+    flow: horizontal;
+    cycle: true;
+    scrollbar: false;
+
+    spacing: 10px;
+    padding: 0px;
+
+    border: 0px;
+
+    background-color: @transparent;
+}
+
+element {
+    orientation: vertical;
+
+    padding: 30px 8px;
+
+    border: 1px;
+    border-color: @border;
+    border-radius: 4px;
+
+    background-color: @surface;
+    text-color: @muted;
+
+    children: [ element-text ];
+}
+
+element normal.normal {
+    background-color: @surface;
+    text-color: @muted;
+}
+
+element selected.normal {
+    border-color: @accent;
+    background-color: @hover;
+    text-color: @accent;
+}
+
+element-text {
+    padding: 4px;
+
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+
+    text-color: inherit;
+    background-color: @transparent;
+}
+
+inputbar,
+prompt,
+entry,
+case-indicator,
+num-filtered-rows,
+element-icon {
+    enabled: false;
+}

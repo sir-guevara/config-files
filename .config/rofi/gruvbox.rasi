@@ -1,0 +1,167 @@
+/* Groovy Gruvbox application launcher */
+
+* {
+    bg:              #282828;
+    surface:         #32302f;
+    hover:           #3c3836;
+    border:          #504945;
+    fg:              #ebdbb2;
+    muted:           #a89984;
+    accent:          #d79921;
+    active:          #b8bb26;
+    urgent:          #fb4934;
+    transparent:     #00000000;
+
+    font:            "JetBrainsMono Nerd Font 10";
+    background-color: @transparent;
+    text-color:       @fg;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 620px;
+    padding: 14px;
+    border: 1px;
+    border-color: @border;
+    border-radius: 4px;
+    background-color: @bg;
+}
+
+mainbox {
+    orientation: vertical;
+    spacing: 12px;
+    padding: 0px;
+    background-color: @bg;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    orientation: horizontal;
+  
+    padding: 9px 12px;
+    border: 1px;
+    border-color: @border;
+    border-radius: 4px;
+    background-color: @surface;
+    children: [ search-icon, entry ];
+}
+
+search-icon {
+    str: "";
+    width: 18px;
+    padding: 0px;
+    font: "JetBrainsMono Nerd Font 12";
+    horizontal-align: 0.0;
+    vertical-align: 0.5;
+    text-color: @muted;
+    background-color: @transparent;
+}
+
+entry {
+    expand: true;
+    padding: 0px;
+    horizontal-align: 0.0;
+    vertical-align: 0.5;
+    placeholder: "Search applications...";
+    placeholder-color: @muted;
+    cursor: text;
+    text-color: @fg;
+    background-color: @transparent;
+}
+
+prompt,
+case-indicator,
+num-filtered-rows {
+    enabled: false;
+}
+
+listview {
+    lines: 3;
+    columns: 5;
+    fixed-height: true;
+    fixed-columns: true;
+    flow: horizontal;
+    cycle: true;
+    scrollbar: false;
+    spacing: 7px;
+    padding: 0px;
+    border: 0px;
+    background-color: @transparent;
+}
+
+element {
+    orientation: vertical;
+    spacing: 7px;
+    padding: 10px 5px;
+    border: 1px;
+    border-color: @transparent;
+    border-radius: 4px;
+    background-color: @transparent;
+    text-color: @muted;
+    children: [ element-icon, element-text ];
+}
+
+element normal.normal {
+    background-color: @transparent;
+    text-color: @muted;
+}
+
+element normal.active {
+    background-color: @transparent;
+    text-color: @active;
+}
+
+element normal.urgent {
+    background-color: @transparent;
+    text-color: @urgent;
+}
+
+element selected.normal {
+    border-color: @accent;
+    background-color: @hover;
+    text-color: @fg;
+}
+
+element selected.active {
+    border-color: @active;
+    background-color: @hover;
+    text-color: @active;
+}
+
+element selected.urgent {
+    border-color: @urgent;
+    background-color: @hover;
+    text-color: @urgent;
+}
+
+element-icon {
+    size: 44px;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    margin: 0px;
+    border: 0px;
+    background-color: @transparent;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    padding: 0px;
+    font: "JetBrainsMono Nerd Font 9";
+    text-color: inherit;
+    background-color: @transparent;
+}
+
+message {
+    enabled: false;
+}
+
+error-message {
+    padding: 14px;
+    border: 1px;
+    border-color: @urgent;
+    border-radius: 4px;
+    text-color: @fg;
+    background-color: @bg;
+}

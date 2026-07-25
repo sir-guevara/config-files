@@ -1,0 +1,11 @@
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    terminal: "kitty";
+    font: "JetBrainsMono Nerd Font 11";
+    matching: "fuzzy";
+    sort: true;
+    cycle: true;
+}
+
+@theme "gruvbox"

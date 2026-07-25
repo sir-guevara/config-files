@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Return the current FreeBSD master volume as a number from 0 to 100.
+# Eww requires a plain numeric value for the slider.
+
+volume="$(
+    mixer vol 2>/dev/null |
+        awk '
+            /vol/ {
+                value = $2
+                gsub(/:/, "", value)
+                split(value, channels, ":")
+                print channels[1]
+                exit
+            }
+        '
+)"
+
+# Newer mixer output may look like:
+# vol.volume=0.75:0.75
+if [ -z "$volume" ]; then
+    volume="$(
+        mixer vol 2>/dev/null |
+            awk -F= '
+                /vol\.volume/ {
+                    split($2, channels, ":")
+                    printf "%.0f\n", channels[1] * 100
+                    exit
+                }
+            '
+    )"
+fi
+
+# Final fallback so Eww never receives an empty value.
+case "$volume" in
+    ''|*[!0-9]*)
+        echo 0
+        ;;
+    *)
+        if [ "$volume" -gt 100 ]; then
+            echo 100
+        elif [ "$volume" -lt 0 ]; then
+            echo 0
+        else
+            echo "$volume"
+        fi
+        ;;
+esac

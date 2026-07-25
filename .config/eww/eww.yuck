@@ -1,0 +1,265 @@
+;; =========================================================
+;; GROOVY CONTROL CENTER
+;; FreeBSD + Qtile + Eww
+;; =========================================================
+
+
+;; ---------------------------------------------------------
+;; LIVE SYSTEM VALUES
+;; ---------------------------------------------------------
+
+(defpoll current_time
+  :interval "20s"
+  "date '+%I:%M %p'")
+
+(defpoll current_date
+  :interval "60s"
+  "date '+%A, %B %d'")
+
+(defpoll volume_percent
+  :interval "1s"
+  "~/.config/eww/scripts/audio.sh get-volume")
+
+(defpoll mute_status
+  :interval "1s"
+  "~/.config/eww/scripts/audio.sh get-mute")
+
+(defpoll brightness_percent
+  :interval "2s"
+  "~/.config/eww/scripts/brightness.sh get")
+
+(defpoll wifi_status
+  :interval "4s"
+  "~/.config/eww/scripts/network.sh status")
+
+(defpoll wifi_name
+  :interval "4s"
+  "~/.config/eww/scripts/network.sh ssid")
+
+(defpoll bluetooth_status
+  :interval "4s"
+  "~/.config/eww/scripts/bluetooth.sh status")
+
+
+;; ---------------------------------------------------------
+;; HEADER ACTION BUTTON
+;; ---------------------------------------------------------
+
+(defwidget action-button [icon tooltip command]
+  (button
+    :class "action-button"
+    :tooltip tooltip
+    :onclick command
+
+    (label
+      :class "action-icon"
+      :text icon)))
+
+
+;; ---------------------------------------------------------
+;; SLIDER ROW
+;; ---------------------------------------------------------
+
+(defwidget control-slider [icon value command]
+  (box
+    :class "slider-row"
+    :orientation "h"
+    :space-evenly false
+    :spacing 10
+
+    (label
+      :class "slider-icon"
+      :text icon)
+
+    (scale
+      :class "control-scale"
+      :hexpand true
+      :min 0
+      :max 100
+      :value value
+      :onchange command)
+
+    (label
+      :class "slider-value"
+      :text "${value}%")))
+
+
+;; ---------------------------------------------------------
+;; STATUS ROW
+;; ---------------------------------------------------------
+
+(defwidget status-row [icon title value active command]
+  (button
+    :class {active ? "status-row status-active" : "status-row"}
+    :onclick command
+
+    (box
+      :orientation "h"
+      :space-evenly false
+      :spacing 11
+
+      (label
+        :class "status-icon"
+        :text icon)
+
+      (label
+        :class "status-title"
+        :halign "start"
+        :hexpand true
+        :text title)
+
+      (label
+        :class "status-value"
+        :halign "end"
+        :limit-width 18
+        :show-truncated true
+        :text value)
+
+      (label
+        :class "status-arrow"
+        :text ""))))
+
+
+;; ---------------------------------------------------------
+;; HEADER
+;; ---------------------------------------------------------
+
+(defwidget panel-header []
+  (box
+    :class "panel-header"
+    :orientation "h"
+    :space-evenly false
+    :spacing 8
+
+    (box
+      :class "date-time"
+      :orientation "v"
+      :space-evenly false
+      :hexpand true
+      :spacing 1
+
+      (label
+        :class "time"
+        :halign "start"
+        :text current_time)
+
+      (label
+        :class "date"
+        :halign "start"
+        :text current_date))
+
+    (action-button
+      :icon ""
+      :tooltip "Lock"
+      :command "~/.config/qtile/scripts/lock-screen")
+
+    (action-button
+      :icon ""
+      :tooltip "Power"
+      :command "~/.config/qtile/scripts/power-menu")))
+
+
+;; ---------------------------------------------------------
+;; AUDIO AND BRIGHTNESS
+;; ---------------------------------------------------------
+
+(defwidget slider-panel []
+  (box
+    :class "slider-panel"
+    :orientation "v"
+    :space-evenly false
+    :spacing 14
+
+    (box
+      :orientation "h"
+      :space-evenly false
+      :spacing 4
+
+      (button
+        :class "slider-mute-button"
+        :tooltip {mute_status == "true" ? "Unmute" : "Mute"}
+        :onclick "~/.config/eww/scripts/audio.sh toggle-mute"
+
+        (label
+          :class "slider-mute-icon"
+          :text {mute_status == "true" ? "󰖁" : "󰕾"}))
+
+      (scale
+        :class "control-scale"
+        :hexpand true
+        :min 0
+        :max 100
+        :value volume_percent
+        :onchange "~/.config/eww/scripts/audio.sh set-volume {}")
+
+      (label
+        :class "slider-value"
+        :text "${volume_percent}%"))
+
+    (control-slider
+      :icon "󰃠"
+      :value brightness_percent
+      :command "~/.config/eww/scripts/brightness.sh set {}")))
+
+
+;; ---------------------------------------------------------
+;; CONNECTIVITY
+;; ---------------------------------------------------------
+
+(defwidget connectivity-panel []
+  (box
+    :class "connectivity-panel"
+    :orientation "v"
+    :space-evenly false
+    :spacing 6
+
+    (status-row
+      :icon "󰖩"
+      :title "Wi-Fi"
+      :value wifi_name
+      :active {wifi_status == "Connected"}
+      :command "~/.config/qtile/scripts/wifi-menu")
+
+    (status-row
+      :icon "󰂯"
+      :title "Bluetooth"
+      :value bluetooth_status
+      :active {bluetooth_status == "On"}
+      :command "~/.config/qtile/scripts/bluetooth-menu")))
+
+
+;; ---------------------------------------------------------
+;; COMPLETE PANEL
+;; ---------------------------------------------------------
+
+(defwidget quick-settings []
+  (box
+    :class "quick-settings"
+    :orientation "v"
+    :space-evenly false
+    :spacing 8
+
+    (panel-header)
+    (slider-panel)
+    (connectivity-panel)))
+
+
+;; ---------------------------------------------------------
+;; WINDOW
+;; ---------------------------------------------------------
+
+(defwindow quick-settings-panel
+  :monitor 0
+
+  :geometry
+    (geometry
+      :x "-20px"
+      :y "42px"
+      :width "330px"
+      :anchor "top right")
+
+  :stacking "fg"
+  :exclusive false
+  :focusable true
+
+  (quick-settings))

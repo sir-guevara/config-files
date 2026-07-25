@@ -1,0 +1,306 @@
+/* =========================================================
+   GROOVY CONTROL CENTER
+   FreeBSD + Qtile + Eww
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   COLORS
+   --------------------------------------------------------- */
+
+$bg: #282828;
+$surface: #32302f;
+$surface-alt: #3c3836;
+$border: #504945;
+
+$fg: #ebdbb2;
+$muted: #a89984;
+
+$accent: #d79921;
+$accent-bright: #fabd2f;
+
+
+/* ---------------------------------------------------------
+   RESET
+   --------------------------------------------------------- */
+
+* {
+    all: unset;
+
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 11px;
+
+    color: $fg;
+}
+
+
+/* ---------------------------------------------------------
+   MAIN PANEL
+   --------------------------------------------------------- */
+
+.quick-settings {
+    min-width: 304px;
+
+    padding: 10px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $bg;
+}
+
+
+/* ---------------------------------------------------------
+   HEADER
+   --------------------------------------------------------- */
+
+.panel-header {
+    min-height: 46px;
+
+    padding: 8px 9px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $surface;
+}
+
+.time {
+    font-size: 14px;
+    font-weight: bold;
+    color: $fg;
+}
+
+.date {
+    font-size: 10px;
+    color: $muted;
+}
+
+
+/* ---------------------------------------------------------
+   HEADER ACTIONS
+   --------------------------------------------------------- */
+
+.action-button {
+    min-width: 34px;
+    min-height: 34px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $bg;
+}
+
+.action-button:hover {
+    border-color: $accent;
+    background-color: $surface-alt;
+}
+
+.action-button:active {
+    background-color: $accent;
+}
+
+.action-icon {
+    font-size: 14px;
+    color: $muted;
+}
+
+.action-button:hover .action-icon {
+    color: $accent-bright;
+}
+
+.action-button:active .action-icon {
+    color: $bg;
+}
+
+
+/* ---------------------------------------------------------
+   SLIDER PANEL
+   --------------------------------------------------------- */
+
+.slider-panel {
+    padding: 12px 11px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $surface;
+}
+
+.slider-row {
+    min-height: 28px;
+}
+
+.slider-icon {
+    min-width: 24px;
+
+    font-size: 14px;
+    color: $muted;
+}
+
+.slider-value {
+    min-width: 38px;
+
+    font-size: 10px;
+    color: $muted;
+}
+
+
+/* Volume icon button */
+
+.slider-mute-button {
+    min-width: 24px;
+    min-height: 24px;
+
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.slider-mute-button:hover {
+    border-color: $border;
+    background-color: $surface-alt;
+}
+
+.slider-mute-icon {
+    font-size: 14px;
+    color: $muted;
+}
+
+.slider-mute-button:hover .slider-mute-icon {
+    color: $accent-bright;
+}
+
+
+/* Slider track */
+
+.control-scale trough {
+    min-height: 6px;
+
+    border: 1px solid $border;
+    border-radius: 3px;
+
+    background-color: $bg;
+}
+
+.control-scale highlight {
+    min-height: 6px;
+
+    border-radius: 3px;
+
+    background-color: $accent;
+}
+
+.control-scale slider {
+    min-width: 12px;
+    min-height: 12px;
+
+    margin: -4px;
+
+    border: 1px solid $accent-bright;
+    border-radius: 6px;
+
+    background-color: $accent;
+}
+
+.control-scale slider:hover {
+    background-color: $accent-bright;
+}
+
+
+/* ---------------------------------------------------------
+   CONNECTIVITY
+   --------------------------------------------------------- */
+
+.connectivity-panel {
+    background-color: transparent;
+}
+
+.status-row {
+    min-height: 40px;
+
+    padding: 0 10px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $surface;
+}
+
+.status-row:hover {
+    border-color: $accent;
+    background-color: $surface-alt;
+}
+
+.status-row:active {
+    background-color: $accent;
+}
+
+.status-icon {
+    min-width: 22px;
+
+    font-size: 14px;
+    color: $muted;
+}
+
+.status-title {
+    font-size: 10px;
+    font-weight: bold;
+    color: $fg;
+}
+
+.status-value {
+    font-size: 9px;
+    color: $muted;
+}
+
+.status-arrow {
+    min-width: 12px;
+
+    font-size: 10px;
+    color: $muted;
+}
+
+
+/* Active connectivity */
+
+.status-active {
+    border-color: $accent;
+}
+
+.status-active .status-icon {
+    color: $accent-bright;
+}
+
+
+/* Hover behavior */
+
+.status-row:hover .status-icon,
+.status-row:hover .status-arrow {
+    color: $accent-bright;
+}
+
+.status-row:active .status-icon,
+.status-row:active .status-title,
+.status-row:active .status-value,
+.status-row:active .status-arrow {
+    color: $bg;
+}
+
+
+/* ---------------------------------------------------------
+   TOOLTIPS
+   --------------------------------------------------------- */
+
+tooltip {
+    padding: 6px 8px;
+
+    border: 1px solid $border;
+    border-radius: 4px;
+
+    background-color: $bg;
+}
+
+tooltip label {
+    font-size: 10px;
+    color: $fg;
+}

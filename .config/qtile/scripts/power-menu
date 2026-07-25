@@ -1,0 +1,92 @@
+#!/bin/sh
+
+THEME="$HOME/.config/rofi/power-menu.rasi"
+
+uptime_text="$(
+    uptime |
+    sed -E 's/^.*up[[:space:]]+([^,]+),.*$/\1/' |
+    xargs
+)"
+
+battery="$(sysctl -n hw.acpi.battery.life 2>/dev/null)"
+
+if [ -n "$battery" ]; then
+    battery_text="${battery}%"
+else
+    battery_text="AC"
+fi
+
+physmem="$(sysctl -n hw.physmem 2>/dev/null)"
+pagesize="$(sysctl -n hw.pagesize 2>/dev/null)"
+freepages="$(sysctl -n vm.stats.vm.v_free_count 2>/dev/null)"
+inactivepages="$(sysctl -n vm.stats.vm.v_inactive_count 2>/dev/null)"
+cachepages="$(sysctl -n vm.stats.vm.v_cache_count 2>/dev/null)"
+
+if [ -n "$physmem" ] && [ -n "$pagesize" ]; then
+    available=$(( (freepages + inactivepages + cachepages) * pagesize ))
+    used=$(( physmem - available ))
+
+    used_gb="$(
+        awk -v bytes="$used" \
+            'BEGIN { printf "%.1f", bytes / 1073741824 }'
+    )"
+
+    total_gb="$(
+        awk -v bytes="$physmem" \
+            'BEGIN { printf "%.1f", bytes / 1073741824 }'
+    )"
+
+    ram_text="${used_gb}G / ${total_gb}G"
+else
+    ram_text="Unknown"
+fi
+
+status="System     ${uptime_text}     ${battery_text}    󰍛 ${ram_text}"
+
+choice="$(
+    printf '%s\n' \
+        "<span size='26000'></span>
+<span size='10500'>Shutdown</span>" \
+        "<span size='26000'>󰜉</span>
+<span size='10500'>Reboot</span>" \
+        "<span size='26000'></span>
+<span size='10500'>Lock</span>" \
+        "<span size='26000'>󰤄</span>
+<span size='10500'>Suspend</span>" \
+        "<span size='26000'>󰗽</span>
+<span size='10500'>Logout</span>" |
+    rofi \
+        -dmenu \
+        -markup-rows \
+        -format i \
+        -mesg "$status" \
+        -theme "$THEME"
+)"
+
+case "$choice" in
+    0)
+        doas shutdown -p now
+        ;;
+
+    1)
+        doas shutdown -r now
+        ;;
+
+    2)
+        if command -v betterlockscreen >/dev/null 2>&1; then
+            betterlockscreen -l
+        elif command -v i3lock >/dev/null 2>&1; then
+            i3lock
+        elif command -v xlock >/dev/null 2>&1; then
+            xlock
+        fi
+        ;;
+
+    3)
+        doas acpiconf -s 3
+        ;;
+
+    4)
+        qtile cmd-obj -o cmd -f shutdown
+        ;;
+esac

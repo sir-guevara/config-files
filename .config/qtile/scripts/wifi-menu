@@ -1,0 +1,186 @@
+#!/bin/sh
+
+# =========================================================
+# Wi-Fi menu for FreeBSD + Qtile + Rofi
+# =========================================================
+
+ROFI="rofi -dmenu -i -p Wi-Fi"
+PASSWORD_ROFI="rofi -dmenu -password -p Password"
+
+find_interface() {
+    for interface in $(ifconfig -l); do
+        case "$interface" in
+            wlan*)
+                echo "$interface"
+                return 0
+                ;;
+        esac
+    done
+
+    return 1
+}
+
+INTERFACE="$(find_interface)"
+
+if [ -z "$INTERFACE" ]; then
+    printf '%s\n' "No wireless interface found" |
+        rofi -dmenu -p "Wi-Fi error"
+    exit 1
+fi
+
+current_ssid() {
+    wpa_cli -i "$INTERFACE" status 2>/dev/null |
+        awk -F= '$1 == "ssid" {
+            print substr($0, index($0, "=") + 1)
+            exit
+        }'
+}
+
+known_network_id() {
+    target_ssid="$1"
+
+    wpa_cli -i "$INTERFACE" list_networks 2>/dev/null |
+        awk -F '\t' -v target="$target_ssid" '
+            NR > 1 && $2 == target {
+                print $1
+                exit
+            }
+        '
+}
+
+escape_wpa_value() {
+    printf '%s' "$1" |
+        sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+connect_known_network() {
+    ssid="$1"
+    network_id="$(known_network_id "$ssid")"
+
+    [ -n "$network_id" ] || return 1
+
+    wpa_cli -i "$INTERFACE" select_network "$network_id" >/dev/null 2>&1
+    wpa_cli -i "$INTERFACE" reassociate >/dev/null 2>&1
+}
+
+connect_new_network() {
+    ssid="$1"
+
+    password="$(printf '' | $PASSWORD_ROFI)"
+
+    [ -n "$password" ] || exit 0
+
+    network_id="$(
+        wpa_cli -i "$INTERFACE" add_network 2>/dev/null |
+            awk '/^[0-9]+$/ {
+                print
+                exit
+            }'
+    )"
+
+    if [ -z "$network_id" ]; then
+        printf '%s\n' "Could not create Wi-Fi profile" |
+            rofi -dmenu -p "Wi-Fi error"
+        exit 1
+    fi
+
+    escaped_ssid="$(escape_wpa_value "$ssid")"
+    escaped_password="$(escape_wpa_value "$password")"
+
+    if ! wpa_cli -i "$INTERFACE" \
+        set_network "$network_id" ssid "\"$escaped_ssid\"" \
+        >/dev/null 2>&1; then
+
+        wpa_cli -i "$INTERFACE" remove_network "$network_id" \
+            >/dev/null 2>&1
+
+        exit 1
+    fi
+
+    if ! wpa_cli -i "$INTERFACE" \
+        set_network "$network_id" psk "\"$escaped_password\"" \
+        >/dev/null 2>&1; then
+
+        wpa_cli -i "$INTERFACE" remove_network "$network_id" \
+            >/dev/null 2>&1
+
+        exit 1
+    fi
+
+    wpa_cli -i "$INTERFACE" enable_network "$network_id" \
+        >/dev/null 2>&1
+
+    wpa_cli -i "$INTERFACE" select_network "$network_id" \
+        >/dev/null 2>&1
+
+    wpa_cli -i "$INTERFACE" save_config \
+        >/dev/null 2>&1
+
+    wpa_cli -i "$INTERFACE" reassociate \
+        >/dev/null 2>&1
+}
+
+scan_networks() {
+    doas ifconfig "$INTERFACE" up >/dev/null 2>&1
+
+    wpa_cli -i "$INTERFACE" scan >/dev/null 2>&1
+    sleep 2
+
+    wpa_cli -i "$INTERFACE" scan_results 2>/dev/null |
+        awk -F '\t' '
+            NR > 2 && $5 != "" && !seen[$5]++ {
+                print $5
+            }
+        '
+}
+
+CONNECTED="$(current_ssid)"
+NETWORKS="$(scan_networks)"
+
+MENU_ITEMS="$(
+    printf '%s\n' "$NETWORKS" |
+        while IFS= read -r ssid; do
+            [ -n "$ssid" ] || continue
+
+            if [ "$ssid" = "$CONNECTED" ]; then
+                printf '󰖩  %s  [Connected]\n' "$ssid"
+            elif [ -n "$(known_network_id "$ssid")" ]; then
+                printf '󰖩  %s  [Saved]\n' "$ssid"
+            else
+                printf '󰖩  %s\n' "$ssid"
+            fi
+        done
+)"
+
+if [ -z "$MENU_ITEMS" ]; then
+    printf '%s\n' "No Wi-Fi networks found" |
+        rofi -dmenu -p "Wi-Fi"
+    exit 0
+fi
+
+SELECTION="$(
+    printf '%s\n' "$MENU_ITEMS" |
+        $ROFI
+)"
+
+[ -n "$SELECTION" ] || exit 0
+
+SELECTED_SSID="$(
+    printf '%s\n' "$SELECTION" |
+        sed \
+            -e 's/^󰖩  //' \
+            -e 's/  \[Connected\]$//' \
+            -e 's/  \[Saved\]$//'
+)"
+
+[ -n "$SELECTED_SSID" ] || exit 0
+
+if [ "$SELECTED_SSID" = "$CONNECTED" ]; then
+    exit 0
+fi
+
+if known_network_id "$SELECTED_SSID" >/dev/null; then
+    connect_known_network "$SELECTED_SSID"
+else
+    connect_new_network "$SELECTED_SSID"
+fi

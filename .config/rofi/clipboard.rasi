@@ -1,0 +1,38 @@
+@theme "gruvbox"
+
+window {
+    width: 720px;
+}
+
+entry {
+    width: 650px;
+    placeholder: "Search clipboard history...";
+}
+
+listview {
+    lines: 10;
+    columns: 1;
+    fixed-height: false;
+    fixed-columns: true;
+    flow: vertical;
+    spacing: 4px;
+}
+
+element {
+    orientation: horizontal;
+    padding: 9px 12px;
+    spacing: 0px;
+    border-radius: 4px;
+    children: [ element-text ];
+}
+
+element selected.normal {
+    background-color: @hover;
+    border-color: @accent;
+    text-color: @fg;
+}
+
+element-text {
+    horizontal-align: 0.0;
+    vertical-align: 0.5;
+}

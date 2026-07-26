@@ -22,6 +22,26 @@ xinput list --id-only | while IFS= read -r device_id; do
         xinput set-prop "$device_id" "$natural_scroll" "$natural_enabled"
     fi
 
+    tapping=$(printf '%s\n' "$properties" | sed -n \
+        's/.*libinput Tapping Enabled (\([0-9][0-9]*\)):.*/\1/p' | head -1)
+    if [ -n "$tapping" ]; then
+        xinput set-prop "$device_id" "$tapping" 1
+    fi
+
+    tap_mapping=$(printf '%s\n' "$properties" | sed -n \
+        's/.*libinput Tapping Button Mapping Enabled (\([0-9][0-9]*\)):.*/\1/p')
+    if [ -n "$tap_mapping" ]; then
+        # LRM: one finger left, two fingers right, three fingers middle.
+        xinput set-prop "$device_id" "$tap_mapping" 1 0
+    fi
+
+    click_method=$(printf '%s\n' "$properties" | sed -n \
+        's/.*libinput Click Method Enabled (\([0-9][0-9]*\)):.*/\1/p')
+    if [ -n "$click_method" ]; then
+        # Clickfinger: one-finger physical click; two-finger right-click.
+        xinput set-prop "$device_id" "$click_method" 0 1
+    fi
+
     middle_emulation=$(printf '%s\n' "$properties" | sed -n \
         's/.*libinput Middle Emulation Enabled (\([0-9][0-9]*\)):.*/\1/p')
     if [ -n "$middle_emulation" ]; then

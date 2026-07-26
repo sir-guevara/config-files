@@ -65,6 +65,15 @@ def startup_once():
     # NetworkManager lives in the existing Qtile system tray.
     run(["nm-applet"])
 
+    # Tiny X11 clipboard history; no tray process or database.
+    run([script("clipboard-daemon")])
+
+    # Three-finger workspace and window-overview gestures when installed.
+    run(["touchegg"])
+
+    # Launches xsettingsd in the background when Qtile starts
+    subprocess.Popen(['xsettingsd'])
+
     # Restore the wallpaper without adding a desktop daemon.
     wallpaper = os.path.expanduser(str(WALLPAPER))
     if os.path.exists(wallpaper):

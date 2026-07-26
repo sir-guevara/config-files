@@ -1,0 +1,30 @@
+#!/bin/sh
+
+command -v xclip >/dev/null 2>&1 || exit 0
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/groovy-clipboard"
+entries="$cache_dir/entries"
+lock="$cache_dir/daemon.lock"
+mkdir -p "$entries"
+
+if ! mkdir "$lock" 2>/dev/null; then
+    exit 0
+fi
+trap 'rmdir "$lock" 2>/dev/null' EXIT INT TERM
+
+last_hash=""
+while :; do
+    value=$(xclip -selection clipboard -o 2>/dev/null) || value=""
+    if [ -n "$value" ]; then
+        hash=$(printf '%s' "$value" | cksum | awk '{print $1 "-" $2}')
+        if [ "$hash" != "$last_hash" ]; then
+            last_hash=$hash
+            file="$entries/$(date +%s)-$hash"
+            printf '%s' "$value" > "$file"
+            find "$entries" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null \
+                | sort -nr | awk 'NR > 30 {sub(/^[^ ]+ /, ""); print}' \
+                | while IFS= read -r old; do rm -f -- "$old"; done
+        fi
+    fi
+    sleep 0.8
+done

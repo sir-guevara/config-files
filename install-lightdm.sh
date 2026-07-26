@@ -16,7 +16,7 @@ test -d "$desktop_home/.local/share/themes/$theme"
 test -d "$desktop_home/.local/share/icons/$icons"
 cp -a "$desktop_home/.local/share/themes/$theme" /usr/share/themes/
 cp -a "$desktop_home/.local/share/icons/$icons" /usr/share/icons/
-install -m 0644 "$repo_dir/walls/wall1.jpg" /usr/share/backgrounds/groovy-lightdm.jpg
+install -m 0644 "$desktop_home/walls/wall10.png" /usr/share/backgrounds/groovy-lightdm.jpg
 
 if [ -f /etc/lightdm/lightdm-gtk-greeter.conf ] && \
    [ ! -f /etc/lightdm/lightdm-gtk-greeter.conf.groovy-backup ]; then

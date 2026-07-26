@@ -57,6 +57,7 @@ APPLICATION_LAUNCHER = "rofi -show drun"
 WINDOW_SWITCHER = "rofi -show window"
 
 POWER_MENU = str(SCRIPTS_DIR / "power-menu")
+GROOVYNOTE = str(HOME / ".local/bin/groovynote")
 
 
 # ==========================================================

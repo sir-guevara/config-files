@@ -1,0 +1,464 @@
+#!/usr/bin/env python3
+"""GroovyNote: one lightweight, MEGA-synced scratchpad."""
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import unicodedata
+from pathlib import Path
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
+gi.require_version("Pango", "1.0")
+
+from gi.repository import Gdk, GLib, Gtk, Pango
+
+
+NOTES_DIR = Path.home() / "MEGA" / "Notes" / "GroovyNote"
+LEGACY_NOTE = Path.home() / "MEGA" / "Notes" / "groovynote.txt"
+UNCHECKED = "☐ "
+CHECKED = "☑ "
+
+CSS = b"""
+window.groovynote { background: #1d2021; }
+.editor-pane { background: #1d2021; }
+scrolledwindow, textview, textview text { background: #1d2021; }
+textview {
+  color: #ebdbb2; caret-color: #fe8019;
+  font-family: "JetBrainsMono Nerd Font"; font-size: 14px;
+}
+textview text selection { background: #458588; color: #fbf1c7; }
+scrollbar slider { min-width: 5px; min-height: 34px; background: #504945; }
+"""
+
+
+class GroovyNote(Gtk.Application):
+    def __init__(self) -> None:
+        super().__init__(application_id="com.groovy.GroovyNote")
+        self.save_timer: int | None = None
+        self.style_timer: int | None = None
+        self.last_saved = ""
+        self.disk_mtime = 0
+        self.current_note: Path | None = None
+        self.loading = False
+
+    def do_activate(self) -> None:
+        existing = self.get_active_window()
+        if existing:
+            existing.present()
+            return
+
+        self._load_css()
+        self.window = Gtk.ApplicationWindow(application=self)
+        self.window.set_title("GroovyNote")
+        self.window.set_decorated(False)
+        self.window.set_default_size(650, 720)
+        self.window.add_css_class("groovynote")
+
+        self.text_view = Gtk.TextView()
+        self.text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.text_view.set_left_margin(28)
+        self.text_view.set_right_margin(28)
+        self.text_view.set_top_margin(24)
+        self.text_view.set_bottom_margin(28)
+        self.text_view.set_pixels_below_lines(5)
+        self.buffer = self.text_view.get_buffer()
+        self.completed_tag = self.buffer.create_tag(
+            "completed", strikethrough=True, foreground="#928374"
+        )
+        self.checkbox_tag = self.buffer.create_tag(
+            "checkbox", foreground="#fabd2f", weight=Pango.Weight.BOLD
+        )
+        self.marker_tag = self.buffer.create_tag("marker", foreground="#665c54")
+        self.heading1_tag = self.buffer.create_tag(
+            "heading1", foreground="#fabd2f", weight=Pango.Weight.BOLD, scale=1.55
+        )
+        self.heading2_tag = self.buffer.create_tag(
+            "heading2", foreground="#fe8019", weight=Pango.Weight.BOLD, scale=1.3
+        )
+        self.heading3_tag = self.buffer.create_tag(
+            "heading3", foreground="#83a598", weight=Pango.Weight.BOLD, scale=1.12
+        )
+        self.bold_tag = self.buffer.create_tag("bold", weight=Pango.Weight.BOLD)
+        self.italic_tag = self.buffer.create_tag("italic", style=Pango.Style.ITALIC)
+        self.code_tag = self.buffer.create_tag(
+            "code", foreground="#8ec07c", background="#282828"
+        )
+        self.quote_tag = self.buffer.create_tag(
+            "quote", foreground="#bdae93", style=Pango.Style.ITALIC
+        )
+        self.buffer.connect("changed", self._changed)
+
+        click = Gtk.GestureClick(button=1)
+        click.connect("released", self._clicked)
+        self.text_view.add_controller(click)
+        keys = Gtk.EventControllerKey()
+        keys.connect("key-pressed", self._key_pressed)
+        self.text_view.add_controller(keys)
+
+        scroller = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        scroller.add_css_class("editor-pane")
+        scroller.set_child(self.text_view)
+        self.window.set_child(scroller)
+
+        self._prepare_notes()
+        self._load_note(self._notes()[0])
+        self._refresh_styles()
+        GLib.timeout_add_seconds(3, self._check_external_change)
+        self.window.present()
+        self.text_view.grab_focus()
+
+    def _load_css(self) -> None:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def _text(self) -> str:
+        return self.buffer.get_text(
+            self.buffer.get_start_iter(), self.buffer.get_end_iter(), True
+        )
+
+    def _prepare_notes(self) -> None:
+        NOTES_DIR.mkdir(parents=True, exist_ok=True)
+        if LEGACY_NOTE.exists() and not any(NOTES_DIR.glob("*.md")):
+            try:
+                (NOTES_DIR / "First note.md").write_text(
+                    LEGACY_NOTE.read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            except OSError as error:
+                print(error, file=sys.stderr)
+        if not any(NOTES_DIR.glob("*.md")):
+            (NOTES_DIR / "Untitled.md").touch()
+
+    def _note_title(self, path: Path, text: str | None = None) -> str:
+        if text is None:
+            try:
+                text = path.read_text(encoding="utf-8")
+            except OSError:
+                text = ""
+        for line in text.splitlines():
+            title = line.strip()
+            if not title:
+                continue
+            title = re.sub(r"^(?:#{1,6}\s+|[☐☑]\s+|- \[[ xX]\]\s+)", "", title)
+            title = re.sub(r"[*_`]", "", title).strip()
+            return title[:24] or "Untitled"
+        return "Untitled"
+
+    def _note_slug(self, text: str) -> str | None:
+        """Turn the first meaningful line into a safe Markdown filename."""
+        for line in text.splitlines():
+            title = line.strip()
+            if not title:
+                continue
+            title = re.sub(r"^(?:#{1,6}\s+|[☐☑]\s+|- \[[ xX]\]\s+)", "", title)
+            title = re.sub(r"[*_`]", "", title).strip()
+            normalized = unicodedata.normalize("NFKD", title)
+            ascii_title = normalized.encode("ascii", "ignore").decode("ascii").lower()
+            slug = re.sub(r"[^a-z0-9]+", "-", ascii_title).strip("-")
+            return slug[:64].rstrip("-") or None
+        return None
+
+    def _rename_from_title(self, text: str) -> None:
+        if self.current_note is None:
+            return
+        slug = self._note_slug(text)
+        if not slug:
+            return
+        destination = NOTES_DIR / f"{slug}.md"
+        if destination == self.current_note:
+            return
+        counter = 2
+        while destination.exists():
+            destination = NOTES_DIR / f"{slug}-{counter}.md"
+            counter += 1
+        self.current_note.replace(destination)
+        self.current_note = destination
+
+    def _notes(self) -> list[Path]:
+        return sorted(
+            NOTES_DIR.glob("*.md"),
+            key=lambda item: item.stat().st_mtime_ns,
+            reverse=True,
+        )
+
+    def _open_note_picker(self) -> None:
+        if self.current_note is not None and self._text() != self.last_saved:
+            self._save()
+        notes = self._notes()
+        rofi = shutil.which("rofi")
+        if not notes or rofi is None:
+            return
+        command = [
+            rofi, "-dmenu", "-i", "-matching", "fuzzy",
+            "-p", "󰈙  Open note", "-format", "i",
+        ]
+        theme = Path.home() / ".config" / "rofi" / "clipboard.rasi"
+        if theme.exists():
+            command.extend(["-theme", str(theme)])
+        result = subprocess.run(
+            command,
+            input="\n".join(self._note_title(note) for note in notes),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        selection = result.stdout.strip()
+        if result.returncode == 0 and selection.isdigit():
+            index = int(selection)
+            if 0 <= index < len(notes):
+                self._load_note(notes[index])
+                self.text_view.grab_focus()
+
+    def _new_note(self) -> None:
+        if self.current_note is not None and self._text() != self.last_saved:
+            self._save()
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        note = NOTES_DIR / f"note-{stamp}.md"
+        counter = 2
+        while note.exists():
+            note = NOTES_DIR / f"note-{stamp}-{counter}.md"
+            counter += 1
+        note.touch()
+        self._load_note(note)
+        self.text_view.grab_focus()
+
+    def _delete_note(self) -> None:
+        if self.current_note is None:
+            return
+        trash = NOTES_DIR / ".trash"
+        trash.mkdir(exist_ok=True)
+        target = trash / self.current_note.name
+        if target.exists():
+            target = trash / f"{int(time.time())}-{self.current_note.name}"
+        try:
+            self.current_note.replace(target)
+        except OSError as error:
+            print(error, file=sys.stderr)
+            return
+        self.current_note = None
+        if not any(NOTES_DIR.glob("*.md")):
+            (NOTES_DIR / "Untitled.md").touch()
+        self._load_note(self._notes()[0])
+
+    def _load_note(self, note: Path) -> None:
+        self.loading = True
+        self.current_note = note
+        try:
+            text = note.read_text(encoding="utf-8") if note.exists() else ""
+            self.buffer.set_text(text)
+            self.buffer.place_cursor(self.buffer.get_end_iter())
+            self.last_saved = text
+            self.disk_mtime = note.stat().st_mtime_ns if note.exists() else 0
+        except OSError as error:
+            print(error, file=sys.stderr)
+        self.loading = False
+        self._refresh_styles()
+
+    def _save(self) -> bool:
+        if self.current_note is None:
+            self.save_timer = None
+            return GLib.SOURCE_REMOVE
+        text = self._text()
+        try:
+            temporary = self.current_note.with_suffix(".tmp")
+            with temporary.open("w", encoding="utf-8") as handle:
+                handle.write(text)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary.replace(self.current_note)
+            self._rename_from_title(text)
+            self.last_saved = text
+            self.disk_mtime = self.current_note.stat().st_mtime_ns
+        except OSError as error:
+            print(error, file=sys.stderr)
+        self.save_timer = None
+        return GLib.SOURCE_REMOVE
+
+    def _changed(self, _buffer) -> None:
+        if self.loading:
+            return
+        if self.style_timer is not None:
+            GLib.source_remove(self.style_timer)
+        self.style_timer = GLib.timeout_add(40, self._refresh_styles)
+        if self.save_timer is not None:
+            GLib.source_remove(self.save_timer)
+        self.save_timer = GLib.timeout_add(450, self._save)
+
+    def _refresh_styles(self) -> bool:
+        start, end = self.buffer.get_bounds()
+        for tag in (
+            self.completed_tag, self.checkbox_tag, self.marker_tag,
+            self.heading1_tag, self.heading2_tag, self.heading3_tag,
+            self.bold_tag, self.italic_tag, self.code_tag, self.quote_tag,
+        ):
+            self.buffer.remove_tag(tag, start, end)
+        line = self.buffer.get_start_iter()
+        while True:
+            line_start = line.copy()
+            line_end = line.copy()
+            if not line_end.ends_line():
+                line_end.forward_to_line_end()
+            text = self.buffer.get_text(line_start, line_end, True)
+            if text.startswith("### "):
+                self.buffer.apply_tag(self.heading3_tag, line_start, line_end)
+                self._tag_slice(self.marker_tag, line_start, 0, 4)
+            elif text.startswith("## "):
+                self.buffer.apply_tag(self.heading2_tag, line_start, line_end)
+                self._tag_slice(self.marker_tag, line_start, 0, 3)
+            elif text.startswith("# "):
+                self.buffer.apply_tag(self.heading1_tag, line_start, line_end)
+                self._tag_slice(self.marker_tag, line_start, 0, 2)
+            elif text.startswith("> "):
+                self.buffer.apply_tag(self.quote_tag, line_start, line_end)
+                self._tag_slice(self.marker_tag, line_start, 0, 2)
+
+            for match in re.finditer(r"\*\*(.+?)\*\*", text):
+                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 2)
+                self._tag_slice(self.bold_tag, line_start, match.start() + 2, match.end() - 2)
+                self._tag_slice(self.marker_tag, line_start, match.end() - 2, match.end())
+            for match in re.finditer(r"(?<!\*)\*([^*]+?)\*(?!\*)", text):
+                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
+                self._tag_slice(self.italic_tag, line_start, match.start() + 1, match.end() - 1)
+                self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
+            for match in re.finditer(r"`([^`]+?)`", text):
+                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
+                self._tag_slice(self.code_tag, line_start, match.start() + 1, match.end() - 1)
+                self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
+            if text.startswith((UNCHECKED, CHECKED)):
+                checkbox_end = line_start.copy()
+                checkbox_end.forward_chars(2)
+                self.buffer.apply_tag(self.checkbox_tag, line_start, checkbox_end)
+                if text.startswith(CHECKED):
+                    self.buffer.apply_tag(self.completed_tag, checkbox_end, line_end)
+            if line_end.is_end():
+                break
+            line = line_end.copy()
+            if not line.forward_line():
+                break
+        self.style_timer = None
+        return GLib.SOURCE_REMOVE
+
+    def _tag_slice(self, tag, line_start, start_offset: int, end_offset: int) -> None:
+        start = line_start.copy()
+        end = line_start.copy()
+        start.forward_chars(start_offset)
+        end.forward_chars(end_offset)
+        self.buffer.apply_tag(tag, start, end)
+
+    def _line_bounds(self):
+        cursor = self.buffer.get_iter_at_mark(self.buffer.get_insert())
+        start = cursor.copy()
+        start.set_line_offset(0)
+        end = start.copy()
+        if not end.ends_line():
+            end.forward_to_line_end()
+        return start, end
+
+    def insert_checkbox(self) -> None:
+        start, end = self._line_bounds()
+        text = self.buffer.get_text(start, end, True)
+        if text.startswith((UNCHECKED, CHECKED)):
+            return
+        cursor = self.buffer.get_iter_at_mark(self.buffer.get_insert())
+        self.buffer.insert_at_cursor(UNCHECKED if cursor.get_line_offset() == 0 else "\n" + UNCHECKED)
+
+    def _toggle_line(self, start, end) -> None:
+        text = self.buffer.get_text(start, end, True)
+        replacement = (
+            CHECKED + text[2:] if text.startswith(UNCHECKED)
+            else UNCHECKED + text[2:] if text.startswith(CHECKED)
+            else UNCHECKED + text
+        )
+        offset = start.get_offset()
+        self.buffer.delete(start, end)
+        self.buffer.insert(self.buffer.get_iter_at_offset(offset), replacement)
+        self.buffer.place_cursor(self.buffer.get_iter_at_offset(offset + len(replacement)))
+
+    def _clicked(self, _gesture, _presses, x, y) -> None:
+        bx, by = self.text_view.window_to_buffer_coords(
+            Gtk.TextWindowType.WIDGET, int(x), int(y)
+        )
+        result = self.text_view.get_iter_at_location(bx, by)
+        clicked = result[-1] if isinstance(result, tuple) else result
+        start = clicked.copy()
+        start.set_line_offset(0)
+        end = start.copy()
+        if not end.ends_line():
+            end.forward_to_line_end()
+        text = self.buffer.get_text(start, end, True)
+        if clicked.get_line_offset() <= 2 and text.startswith((UNCHECKED, CHECKED)):
+            self._toggle_line(start, end)
+
+    def _key_pressed(self, _controller, keyval, _keycode, state) -> bool:
+        ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        if ctrl and shift and keyval in (Gdk.KEY_Delete, Gdk.KEY_KP_Delete):
+            self._delete_note()
+            return True
+        if ctrl and keyval in (Gdk.KEY_o, Gdk.KEY_O):
+            self._open_note_picker()
+            return True
+        if ctrl and keyval in (Gdk.KEY_n, Gdk.KEY_N):
+            self._new_note()
+            return True
+        if ctrl and keyval in (Gdk.KEY_t, Gdk.KEY_T):
+            self.insert_checkbox()
+            return True
+        if ctrl and keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            self._toggle_line(*self._line_bounds())
+            return True
+        if ctrl and keyval in (Gdk.KEY_s, Gdk.KEY_S):
+            self._save()
+            return True
+        if ctrl and keyval in (Gdk.KEY_q, Gdk.KEY_Q):
+            self._save()
+            self.quit()
+            return True
+        if not ctrl and keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            start, end = self._line_bounds()
+            text = self.buffer.get_text(start, end, True)
+            if text.startswith("- [ ] "):
+                self._replace_line(start, end, UNCHECKED + text[6:])
+                self.buffer.insert_at_cursor("\n" + UNCHECKED)
+                return True
+            if text.lower().startswith("- [x] "):
+                self._replace_line(start, end, CHECKED + text[6:])
+                self.buffer.insert_at_cursor("\n" + UNCHECKED)
+                return True
+            if text.startswith((UNCHECKED, CHECKED)):
+                self.buffer.insert_at_cursor("\n" + UNCHECKED)
+                return True
+            GLib.idle_add(self._refresh_styles)
+        return False
+
+    def _replace_line(self, start, end, replacement: str) -> None:
+        offset = start.get_offset()
+        self.buffer.delete(start, end)
+        self.buffer.insert(self.buffer.get_iter_at_offset(offset), replacement)
+        self.buffer.place_cursor(self.buffer.get_iter_at_offset(offset + len(replacement)))
+
+    def _check_external_change(self) -> bool:
+        if self.current_note is None:
+            return GLib.SOURCE_CONTINUE
+        try:
+            mtime = self.current_note.stat().st_mtime_ns
+            if mtime != self.disk_mtime and self._text() == self.last_saved:
+                self._load_note(self.current_note)
+                self._refresh_styles()
+        except OSError:
+            pass
+        return GLib.SOURCE_CONTINUE
+
+
+if __name__ == "__main__":
+    raise SystemExit(GroovyNote().run(sys.argv))

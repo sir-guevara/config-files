@@ -12,6 +12,7 @@ from defaults import (
     CODE_EDITOR,
     EMAIL_CLIENT,
     FILE_MANAGER,
+    GROOVYNOTE,
     MUSIC_PLAYER,
     APPLICATION_LAUNCHER,
     POWER_MENU,
@@ -74,6 +75,10 @@ keys = [
     Key([MOD, "shift"], "Tab", lazy.layout.previous(), desc="Focus Previous Window"),
 
     Key([MOD], "a", lazy.spawn(script("quick-settings")), desc="Quick Settings"),
+
+    Key([MOD], "v", lazy.spawn(script("clipboard-menu")), desc="Clipboard History"),
+
+    Key([MOD, "shift"], "n", lazy.spawn(GROOVYNOTE), desc="GroovyNote"),
 
     Key([], "Print", lazy.spawn("flameshot gui"), desc="Screenshot"),
 

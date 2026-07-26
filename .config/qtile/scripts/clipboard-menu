@@ -1,0 +1,28 @@
+#!/bin/sh
+
+command -v xclip >/dev/null 2>&1 || {
+    dunstify -a Settings -u low 'Clipboard' 'Install xclip to enable history'
+    exit 1
+}
+
+"$HOME/.config/qtile/scripts/clipboard-daemon" >/dev/null 2>&1 &
+
+entries="${XDG_CACHE_HOME:-$HOME/.cache}/groovy-clipboard/entries"
+[ -d "$entries" ] || exit 0
+
+selection=$(
+    find "$entries" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null \
+        | sort -nr | cut -d' ' -f2- \
+        | while IFS= read -r file; do
+            preview=$(tr '\n\t' '  ' < "$file" | tr -s ' ' | cut -c1-90)
+            printf '%s\t%s\n' "$file" "$preview"
+        done \
+        | rofi -dmenu -i -p '󰅇 Clipboard' -display-columns 2 \
+            -theme "$HOME/.config/rofi/clipboard.rasi"
+)
+
+[ -n "$selection" ] || exit 0
+file=${selection%%	*}
+[ -f "$file" ] || exit 1
+xclip -selection clipboard -in < "$file"
+dunstify -a Settings -r 9110 -u low 'Clipboard' 'Copied from history'

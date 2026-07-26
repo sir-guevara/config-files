@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=GroovyNote
+Comment=Minimal MEGA-synced notes
+Exec=groovynote
+Icon=accessories-text-editor
+Terminal=false
+Categories=Utility;TextEditor;
+StartupNotify=true
+StartupWMClass=com.groovy.GroovyNote

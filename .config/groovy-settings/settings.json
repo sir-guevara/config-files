@@ -21,7 +21,7 @@
   },
   "theme": {
     "cursor": "Adwaita",
-    "gtk": "Gruvbox-B-MB-Light-Soft",
+    "gtk": "Nordic-darker-standard-buttons",
     "icons": "Gruvbox-Dark"
   }
 }

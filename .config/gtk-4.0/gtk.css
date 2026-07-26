@@ -1,0 +1,33 @@
+/* Gruvbox surfaces over GTK4's reliable Adwaita dark fallback. */
+window,
+dialog,
+.background {
+  background-color: #282828;
+  color: #ebdbb2;
+}
+
+headerbar,
+toolbar {
+  background-color: #1d2021;
+  color: #ebdbb2;
+  border-color: #504945;
+  box-shadow: none;
+}
+
+entry,
+button {
+  background-color: #32302f;
+  color: #ebdbb2;
+  border-color: #504945;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #3c3836;
+  border-color: #d79921;
+}
+
+selection {
+  background-color: #d79921;
+  color: #1d2021;
+}

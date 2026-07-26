@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Groovy Desktop Settings
+Comment=Configure and install the minimal Gruvbox Qtile desktop
+Exec=groovy-settings
+Icon=preferences-system
+Terminal=false
+Categories=Settings;DesktopSettings;

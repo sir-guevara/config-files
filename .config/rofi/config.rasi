@@ -1,7 +1,7 @@
 configuration {
     modi: "drun,run,window";
     show-icons: true;
-    terminal: "kitty";
+    terminal: "alacritty";
     font: "JetBrainsMono Nerd Font 11";
     matching: "fuzzy";
     sort: true;

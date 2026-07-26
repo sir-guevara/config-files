@@ -1,0 +1,27 @@
+{
+  "appearance": {
+    "active_opacity": 0.98,
+    "blur_strength": 4,
+    "border_width": 2,
+    "corner_radius": 5,
+    "inactive_opacity": 0.95,
+    "window_gap": 8
+  },
+  "apps": {
+    "browser": "firefox --new-window",
+    "code_editor": "code",
+    "email": "thunderbird",
+    "file_manager": "thunar",
+    "music": "cider",
+    "terminal": "alacritty"
+  },
+  "input": {
+    "disable_middle_paste": true,
+    "natural_scroll": true
+  },
+  "theme": {
+    "cursor": "Adwaita",
+    "gtk": "Gruvbox-B-MB-Light-Soft",
+    "icons": "Gruvbox-Dark"
+  }
+}

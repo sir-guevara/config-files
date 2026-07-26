@@ -1,13 +1,4 @@
 #!/bin/sh
 set -eu
 
-if command -v betterlockscreen >/dev/null 2>&1; then
-    exec betterlockscreen -l
-elif command -v i3lock >/dev/null 2>&1; then
-    exec i3lock --color=282828
-elif command -v xlock >/dev/null 2>&1; then
-    exec xlock
-fi
-
-printf '%s\n' 'Install betterlockscreen, i3lock, or xlock.' >&2
-exit 1
+exec loginctl lock-session

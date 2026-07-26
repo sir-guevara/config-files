@@ -9,7 +9,10 @@ from defaults import (
     MOD,
     TERMINAL,
     BROWSER,
+    CODE_EDITOR,
+    EMAIL_CLIENT,
     FILE_MANAGER,
+    MUSIC_PLAYER,
     APPLICATION_LAUNCHER,
     WINDOW_SWITCHER,
     POWER_MENU,
@@ -25,15 +28,56 @@ keys = [
 
     Key([MOD], "Return", lazy.spawn(TERMINAL), desc="Terminal"),
 
-    Key([MOD], "b", lazy.spawn(BROWSER), desc="Browser"),
+    Key(
+        [MOD],
+        "b",
+        lazy.group["2"].toscreen(),
+        lazy.spawn(BROWSER),
+        desc="Browser",
+    ),
 
     Key([MOD], "e", lazy.spawn(FILE_MANAGER), desc="File Manager"),
 
+    Key(
+        [MOD, "shift"],
+        "f",
+        lazy.group["2"].toscreen(),
+        lazy.spawn(BROWSER),
+        desc="Firefox",
+    ),
+
+    Key(
+        [MOD, "shift"],
+        "e",
+        lazy.group["5"].toscreen(),
+        lazy.spawn(EMAIL_CLIENT),
+        desc="Thunderbird",
+    ),
+
+    Key([MOD, "shift"], "m", lazy.spawn(MUSIC_PLAYER), desc="Music"),
+
+    Key([MOD, "shift"], "c", lazy.spawn(CODE_EDITOR), desc="VS Code"),
+
+    Key([MOD, "shift"], "t", lazy.spawn(FILE_MANAGER), desc="Thunar"),
+
     Key([MOD], "d", lazy.spawn(APPLICATION_LAUNCHER), desc="Application Launcher"),
 
+    Key([MOD], "space", lazy.spawn(APPLICATION_LAUNCHER), desc="Application Launcher"),
+
     Key([MOD], "Tab", lazy.spawn(WINDOW_SWITCHER), desc="Window Switcher"),
+
     Key([MOD], "a", lazy.spawn(script("quick-settings")), desc="Quick Settings"),
 
+    Key([], "Print", lazy.spawn("flameshot gui"), desc="Screenshot"),
+
+    Key([MOD, "shift"], "s", lazy.spawn("flameshot gui"), desc="Screenshot"),
+
+    Key(
+        [MOD, "shift"],
+        "w",
+        lazy.spawn(script("wallpaper-next")),
+        desc="Next Wallpaper",
+    ),
     # -------------------------------------------------
     # Qtile
     # -------------------------------------------------
@@ -56,8 +100,6 @@ keys = [
 
     Key([MOD], "l", lazy.layout.right()),
 
-    Key([MOD], "space", lazy.layout.next()),
-
     # -------------------------------------------------
     # Move Windows
     # -------------------------------------------------
@@ -74,13 +116,13 @@ keys = [
     # Resize
     # -------------------------------------------------
 
-    Key([MOD, "control"], "h", lazy.layout.grow_left()),
+    Key([MOD, "control"], "h", lazy.layout.grow()),
 
     Key([MOD, "control"], "j", lazy.layout.grow_down()),
 
     Key([MOD, "control"], "k", lazy.layout.grow_up()),
 
-    Key([MOD, "control"], "l", lazy.layout.grow_right()),
+    Key([MOD, "control"], "l", lazy.layout.shrink()),
 
     Key([MOD], "n", lazy.layout.normalize()),
 
@@ -91,16 +133,6 @@ keys = [
     Key([MOD], "f", lazy.window.toggle_fullscreen()),
 
     Key([MOD, "shift"], "space", lazy.next_layout()),
-
-    # -------------------------------------------------
-    # Screenshot
-    # -------------------------------------------------
-
-    Key(
-        [],
-        "Print",
-        lazy.spawn("flameshot gui"),
-    ),
 
     # -------------------------------------------------
     # Power Menu
@@ -119,19 +151,19 @@ keys = [
     Key(
         [],
         "XF86AudioRaiseVolume",
-        lazy.spawn("mixer vol=+5%"),
+        lazy.spawn(script("volume") + " up"),
     ),
 
     Key(
         [],
         "XF86AudioLowerVolume",
-        lazy.spawn("mixer vol=-5%"),
+        lazy.spawn(script("volume") + " down"),
     ),
 
     Key(
         [],
         "XF86AudioMute",
-        lazy.spawn("mixer vol.mute=toggle"),
+        lazy.spawn(script("volume") + " mute"),
     ),
 
     # -------------------------------------------------

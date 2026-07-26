@@ -1,0 +1,12 @@
+#!/bin/sh
+
+case "${1:-}" in
+    mouse) command=lxinput ;;
+    screens) command=arandr ;;
+    sound) command=pavucontrol ;;
+    bluetooth) command=blueman-manager ;;
+    network) command=nm-connection-editor ;;
+    *) exit 2 ;;
+esac
+
+"$command" >/dev/null 2>&1 &

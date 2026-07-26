@@ -1,0 +1,66 @@
+#!/bin/sh
+set -eu
+
+gtk3_settings="$HOME/.config/gtk-3.0/settings.ini"
+gtk4_settings="$HOME/.config/gtk-4.0/settings.ini"
+
+set_ini_theme() {
+    file=$1
+    theme=$2
+    [ -f "$file" ] || return 0
+    sed --follow-symlinks -i "s/^gtk-theme-name=.*/gtk-theme-name=$theme/" "$file"
+    sed --follow-symlinks -i "s/^gtk-application-prefer-dark-theme=.*/gtk-application-prefer-dark-theme=$3/" "$file"
+}
+
+save_gui_theme() {
+    file="$HOME/.config/groovy-settings/settings.json"
+    [ -f "$file" ] || return 0
+    python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); d["theme"]["gtk"]=sys.argv[2]; open(p,"w").write(json.dumps(d,indent=2,sort_keys=True)+"\n")' \
+        "$file" "$1"
+}
+
+enable_dark() {
+    gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+    gsettings set org.gnome.desktop.interface gtk-theme Nordic-darker-standard-buttons
+    gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
+    set_ini_theme "$gtk3_settings" Nordic-darker-standard-buttons 1
+    set_ini_theme "$gtk4_settings" Nordic-darker-standard-buttons 1
+    save_gui_theme Nordic-darker-standard-buttons
+
+    for version in gtk-3.0 gtk-4.0; do
+        settings="$HOME/.config/$version/settings.ini"
+        source=$(dirname "$(readlink -f "$settings")")/gtk.css
+        [ -f "$source" ] && ln -sfn "$source" "$HOME/.config/$version/gtk.css"
+    done
+
+    dunstify -a Settings -r 9105 -u low -i weather-clear-night-symbolic \
+        "Appearance" "Dark mode enabled"
+}
+
+disable_dark() {
+    gsettings set org.gnome.desktop.interface color-scheme default
+    gsettings set org.gnome.desktop.interface gtk-theme Adwaita
+    set_ini_theme "$gtk3_settings" Adwaita 0
+    set_ini_theme "$gtk4_settings" Adwaita 0
+    save_gui_theme Adwaita
+    rm -f "$HOME/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-4.0/gtk.css"
+    dunstify -a Settings -r 9105 -u low -i weather-clear-symbolic \
+        "Appearance" "Light mode enabled"
+}
+
+case "${1:-}" in
+    status)
+        scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null)
+        [ "$scheme" = "'prefer-dark'" ] && printf 'true\n' || printf 'false\n'
+        ;;
+    toggle)
+        if [ "$("$0" status)" = true ]; then
+            disable_dark
+        else
+            enable_dark
+        fi
+        ;;
+    dark) enable_dark ;;
+    light) disable_dark ;;
+    *) printf 'usage: %s {status|toggle|dark|light}\n' "$0" >&2; exit 2 ;;
+esac

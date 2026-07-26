@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+    wifi-status)
+        ssid="$(nmcli -t -f ACTIVE,SSID device wifi 2>/dev/null |
+            awk -F: '$1 == "yes" { print substr($0, index($0, ":") + 1); exit }')"
+        if [ -n "$ssid" ]; then
+            printf '󰖩 %s\n' "$ssid"
+        else
+            printf '󰖪 Offline\n'
+        fi
+        ;;
+    wifi-toggle)
+        state="$(nmcli radio wifi)"
+        if [ "$state" = "enabled" ]; then
+            nmcli radio wifi off
+            dunstify -a Settings -r 9103 -u low -i network-wireless-offline-symbolic \
+                "Wi-Fi" "Disabled"
+            exit
+        fi
+        nmcli radio wifi on
+        dunstify -a Settings -r 9103 -u low -i network-wireless-symbolic \
+            "Wi-Fi" "Enabled"
+        ;;
+    bluetooth-status)
+        if bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; then
+            printf '󰂯 On\n'
+        else
+            printf '󰂲 Off\n'
+        fi
+        ;;
+    bluetooth-toggle)
+        if bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; then
+            bluetoothctl power off
+            dunstify -a Settings -r 9104 -u low -i bluetooth-disabled-symbolic \
+                "Bluetooth" "Disabled"
+            exit
+        fi
+        bluetoothctl power on
+        dunstify -a Settings -r 9104 -u low -i bluetooth-active-symbolic \
+            "Bluetooth" "Enabled"
+        ;;
+    *)
+        printf 'usage: %s {wifi-status|wifi-toggle|bluetooth-status|bluetooth-toggle}\n' "$0" >&2
+        exit 2
+        ;;
+esac

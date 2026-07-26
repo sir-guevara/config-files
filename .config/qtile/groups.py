@@ -1,138 +1,90 @@
-"""
-Qtile workspaces (groups).
+"""Dedicated workspaces and application routing rules."""
 
-Every major application has a dedicated workspace.
+import re
 
-When an application launches:
-- it automatically opens in its assigned workspace
-- Qtile automatically switches you to that workspace
-"""
-
-from libqtile.config import Group, Match
-from libqtile.config import Key
+from libqtile.config import Group, Key, Match
 from libqtile.lazy import lazy
 
 from defaults import MOD
 
 
-groups = [
+def match_classes(*names: str) -> Match:
+    """Match any listed X11/Wayland application class exactly."""
 
-    # Terminal
+    pattern = "|".join(re.escape(name) for name in names)
+    return Match(wm_class=re.compile(rf"^(?:{pattern})$", re.IGNORECASE))
+
+
+groups = [
     Group(
         "1",
         label="",
-        matches=[
-            Match(wm_class="kitty"),
-        ],
+        matches=[match_classes("Alacritty", "kitty", "org.wezfurlong.wezterm")],
     ),
-
-    # Browser
     Group(
         "2",
         label="󰈹",
         matches=[
-            Match(wm_class="firefox"),
-            Match(wm_class="LibreWolf"),
-            Match(wm_class="chromium"),
-            Match(wm_class="brave-browser"),
+            match_classes(
+                "firefox",
+                "firefox-esr",
+                "org.mozilla.firefox",
+                "Navigator",
+                "Google-chrome",
+                "Chromium",
+                "Brave-browser",
+            )
         ],
     ),
-
-    # Development
     Group(
         "3",
-        label="󰨞",
+        label="",
         matches=[
-            Match(wm_class="Code"),
-            Match(wm_class="code-oss"),
-            Match(wm_class="VSCodium"),
-            Match(wm_class="jetbrains-idea"),
+            match_classes(
+                "Code",
+                "code-oss",
+                "VSCodium",
+                "Sublime_text",
+                "jetbrains-idea",
+            )
         ],
     ),
-
-    # Files
     Group(
         "4",
         label="",
-        matches=[
-            Match(wm_class="Thunar"),
-            Match(wm_class="thunar"),
-            Match(wm_class="Pcmanfm"),
-            Match(wm_class="Nautilus"),
-        ],
+        matches=[match_classes("Thunar", "Nautilus", "org.gnome.Nautilus", "dolphin")],
     ),
-
-    # Media
     Group(
         "5",
-        label="󰎄",
+        label="",
         matches=[
-            Match(wm_class="vlc"),
-            Match(wm_class="Spotify"),
-            Match(wm_class="spotify"),
+            match_classes(
+                "thunderbird",
+                "org.mozilla.Thunderbird",
+                "evolution",
+                "Mailspring",
+            )
         ],
     ),
-
-    # Communication
     Group(
         "6",
-        label="󰭹",
-        matches=[
-            Match(wm_class="discord"),
-            Match(wm_class="TelegramDesktop"),
-            Match(wm_class="Signal"),
-        ],
+        label="󰎄",
+        matches=[match_classes("Spotify", "Rhythmbox", "strawberry")],
     ),
-
-    # Misc
-    Group(
-        "7",
-        label="󱂬",
-    ),
-
-    # Virtual Machines
-    Group(
-        "8",
-        label="󰢹",
-    ),
-
-    # Scratch / Temporary
-    Group(
-        "9",
-        label="",
-    ),
+    Group("7", label=""),
 ]
 
 
 def init_keys(keys):
-
-    """
-    Adds workspace shortcuts to the global keys list.
-    """
-
     for group in groups:
-
         keys.extend(
             [
-
-                # Switch workspace
-                Key(
-                    [MOD],
-                    group.name,
-                    lazy.group[group.name].toscreen(),
-                ),
-
-                # Move focused window and follow it
+                Key([MOD], group.name, lazy.group[group.name].toscreen()),
                 Key(
                     [MOD, "shift"],
                     group.name,
-                    lazy.window.togroup(
-                        group.name,
-                        switch_group=True,
-                    ),
+                    lazy.window.togroup(group.name, switch_group=True),
                 ),
-
             ]
         )
-
     return keys

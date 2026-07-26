@@ -1,0 +1,493 @@
+#!/usr/bin/env python3
+"""Minimal settings and setup utility for the Gruvbox Qtile desktop."""
+
+from __future__ import annotations
+
+import configparser
+import json
+import re
+import shutil
+import subprocess
+import threading
+from pathlib import Path
+
+import gi
+
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
+
+
+GRUVBOX_CSS = b"""
+window {
+  background-color: #1d2021;
+  color: #ebdbb2;
+}
+
+label { color: #ebdbb2; }
+.dim-label { color: #928374; }
+
+notebook {
+  background-color: #282828;
+  border: 1px solid #504945;
+  border-radius: 8px;
+}
+
+notebook header {
+  background-color: #1d2021;
+  border-bottom: 1px solid #504945;
+}
+
+notebook tab {
+  min-height: 28px;
+  padding: 6px 14px;
+  border-bottom: 2px solid transparent;
+}
+
+notebook tab:hover { background-color: #32302f; }
+notebook tab:checked {
+  background-color: #282828;
+  border-bottom-color: #d79921;
+}
+notebook tab:checked label { color: #fabd2f; }
+
+entry,
+spinbutton {
+  min-height: 30px;
+  padding: 2px 8px;
+  color: #ebdbb2;
+  background-color: #32302f;
+  border: 1px solid #504945;
+  border-radius: 5px;
+  caret-color: #fabd2f;
+}
+
+entry:focus,
+spinbutton:focus {
+  border-color: #d79921;
+  box-shadow: 0 0 0 1px #d79921;
+}
+
+button {
+  min-height: 30px;
+  padding: 3px 12px;
+  color: #ebdbb2;
+  background-image: none;
+  background-color: #32302f;
+  border: 1px solid #504945;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+button:hover {
+  color: #fbf1c7;
+  background-color: #3c3836;
+  border-color: #d79921;
+}
+
+button.suggested-action {
+  color: #1d2021;
+  background-color: #d79921;
+  border-color: #fabd2f;
+}
+
+button.suggested-action:hover { background-color: #fabd2f; }
+
+switch {
+  min-width: 42px;
+  min-height: 22px;
+  background-color: #3c3836;
+  border: 1px solid #504945;
+  border-radius: 12px;
+}
+
+switch:checked {
+  background-color: #d79921;
+  border-color: #fabd2f;
+}
+
+switch slider {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 2px;
+  background-color: #a89984;
+  border-radius: 50%;
+}
+
+switch:checked slider { background-color: #fbf1c7; }
+
+scrollbar trough { background-color: #282828; }
+scrollbar slider {
+  min-width: 6px;
+  min-height: 28px;
+  background-color: #504945;
+  border-radius: 4px;
+}
+
+tooltip {
+  color: #ebdbb2;
+  background-color: #282828;
+  border: 1px solid #504945;
+  border-radius: 5px;
+}
+"""
+
+
+HOME = Path.home()
+CONFIG = HOME / ".config"
+SETTINGS_PATH = CONFIG / "groovy-settings" / "settings.json"
+PICOM_PATH = CONFIG / "picom" / "picom.conf"
+GTK_PATH = CONFIG / "gtk-3.0" / "settings.ini"
+GTK4_PATH = CONFIG / "gtk-4.0" / "settings.ini"
+INPUT_SCRIPT = CONFIG / "qtile" / "scripts" / "input-settings"
+REPO = Path(__file__).resolve().parents[2]
+
+DEFAULTS = {
+    "appearance": {
+        "border_width": 2,
+        "window_gap": 8,
+        "corner_radius": 5,
+        "active_opacity": 0.98,
+        "inactive_opacity": 0.95,
+        "blur_strength": 4,
+    },
+    "apps": {
+        "terminal": "alacritty",
+        "browser": "firefox --new-window",
+        "code_editor": "code",
+        "file_manager": "thunar",
+        "email": "thunderbird",
+        "music": "spotify",
+    },
+    "input": {"natural_scroll": True, "disable_middle_paste": True},
+    "theme": {
+        "gtk": "Nordic-darker-standard-buttons",
+        "icons": "Papirus-Dark",
+        "cursor": "Adwaita",
+    },
+}
+
+DEPENDENCIES = {
+    "Qtile": "qtile",
+    "Alacritty": "alacritty",
+    "Rofi": "rofi",
+    "Picom": "picom",
+    "Dunst": "dunst",
+    "Eww": "eww",
+    "feh": "feh",
+    "Thunar": "thunar",
+    "Network applet": "nm-applet",
+    "Pavucontrol": "pavucontrol",
+    "Blueman": "blueman-manager",
+    "Lxinput": "lxinput",
+    "ARandR": "arandr",
+    "Flameshot": "flameshot",
+    "Playerctl": "playerctl",
+    "Starship": "starship",
+    "XInput": "xinput",
+}
+
+
+def install_gruvbox_theme() -> None:
+    provider = Gtk.CssProvider()
+    provider.load_from_data(GRUVBOX_CSS)
+    screen = Gdk.Screen.get_default()
+    if screen is not None:
+        Gtk.StyleContext.add_provider_for_screen(
+            screen,
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+
+def deep_defaults() -> dict:
+    return json.loads(json.dumps(DEFAULTS))
+
+
+def load_settings() -> dict:
+    settings = deep_defaults()
+    try:
+        loaded = json.loads(SETTINGS_PATH.read_text())
+        for section, values in loaded.items():
+            if section in settings and isinstance(values, dict):
+                settings[section].update(values)
+    except (OSError, ValueError):
+        pass
+    return settings
+
+
+def replace_setting(text: str, name: str, value: str) -> str:
+    pattern = rf"(?m)^{re.escape(name)}\s*=\s*[^;]+;"
+    replacement = f"{name} = {value};"
+    updated, count = re.subn(pattern, replacement, text)
+    if count != 1:
+        raise ValueError(f"Could not update {name} in Picom config")
+    return updated
+
+
+def available_gtk_themes() -> list[str]:
+    roots = [Path("/usr/share/themes"), HOME / ".local/share/themes", HOME / ".themes"]
+    themes: set[str] = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for directory in root.iterdir():
+            if directory.is_dir() and any(
+                (directory / version / "gtk.css").is_file()
+                for version in ("gtk-3.0", "gtk-4.0")
+            ):
+                themes.add(directory.name)
+    themes.update(("Adwaita", "Adwaita-dark"))
+    return sorted(themes, key=str.casefold)
+
+
+def available_icon_themes() -> list[str]:
+    roots = [Path("/usr/share/icons"), HOME / ".local/share/icons", HOME / ".icons"]
+    themes: set[str] = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for directory in root.iterdir():
+            if directory.is_dir() and (directory / "index.theme").is_file():
+                themes.add(directory.name)
+    return sorted(themes, key=str.casefold)
+
+
+def available_cursor_themes() -> list[str]:
+    roots = [Path("/usr/share/icons"), HOME / ".local/share/icons", HOME / ".icons"]
+    themes: set[str] = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for directory in root.iterdir():
+            if directory.is_dir() and (directory / "cursors").is_dir():
+                themes.add(directory.name)
+    themes.add("Adwaita")
+    return sorted(themes, key=str.casefold)
+
+
+class SettingsWindow(Gtk.Window):
+    def __init__(self) -> None:
+        super().__init__(title="Groovy Desktop Settings")
+        self.set_default_size(650, 540)
+        self.set_border_width(14)
+        self.settings = load_settings()
+        self.fields: dict[str, Gtk.Widget] = {}
+
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.add(root)
+        heading = Gtk.Label()
+        heading.set_markup("<span size='x-large' weight='bold'>Desktop Settings</span>")
+        heading.set_halign(Gtk.Align.START)
+        root.pack_start(heading, False, False, 0)
+
+        notebook = Gtk.Notebook()
+        root.pack_start(notebook, True, True, 0)
+        notebook.append_page(self.appearance_page(), Gtk.Label(label="Appearance"))
+        notebook.append_page(self.apps_page(), Gtk.Label(label="Default Apps"))
+        notebook.append_page(self.input_page(), Gtk.Label(label="Input"))
+        notebook.append_page(self.setup_page(), Gtk.Label(label="Setup"))
+
+        footer = Gtk.Box(spacing=8)
+        self.status = Gtk.Label(label="Ready")
+        self.status.set_halign(Gtk.Align.START)
+        footer.pack_start(self.status, True, True, 0)
+        apply_button = Gtk.Button(label="Apply Settings")
+        apply_button.get_style_context().add_class("suggested-action")
+        apply_button.connect("clicked", self.apply)
+        footer.pack_end(apply_button, False, False, 0)
+        root.pack_end(footer, False, False, 0)
+
+    def grid(self) -> Gtk.Grid:
+        grid = Gtk.Grid(column_spacing=18, row_spacing=12, margin=14)
+        grid.set_column_homogeneous(False)
+        return grid
+
+    def add_spin(self, grid, row, key, label, low, high, step, value) -> None:
+        grid.attach(Gtk.Label(label=label, xalign=0), 0, row, 1, 1)
+        spin = Gtk.SpinButton.new_with_range(low, high, step)
+        spin.set_value(value)
+        spin.set_hexpand(True)
+        grid.attach(spin, 1, row, 1, 1)
+        self.fields[key] = spin
+
+    def theme_combo(self, values: list[str], selected: str) -> Gtk.ComboBoxText:
+        combo = Gtk.ComboBoxText.new_with_entry()
+        for value in values:
+            combo.append_text(value)
+        if selected in values:
+            combo.set_active(values.index(selected))
+        else:
+            combo.get_child().set_text(selected)
+        combo.set_hexpand(True)
+        return combo
+
+    def appearance_page(self) -> Gtk.Widget:
+        box = self.grid()
+        values = self.settings["appearance"]
+        self.add_spin(box, 0, "border_width", "Window border", 0, 8, 1, values["border_width"])
+        self.add_spin(box, 1, "window_gap", "Window gap", 0, 30, 1, values["window_gap"])
+        self.add_spin(box, 2, "corner_radius", "Corner radius", 0, 30, 1, values["corner_radius"])
+        self.add_spin(box, 3, "active_opacity", "Active opacity", 0.70, 1.0, 0.01, values["active_opacity"])
+        self.add_spin(box, 4, "inactive_opacity", "Inactive opacity", 0.60, 1.0, 0.01, values["inactive_opacity"])
+        self.add_spin(box, 5, "blur_strength", "Blur strength", 0, 12, 1, values["blur_strength"])
+        return box
+
+    def apps_page(self) -> Gtk.Widget:
+        grid = self.grid()
+        labels = {
+            "terminal": "Terminal",
+            "browser": "Browser",
+            "code_editor": "Code editor",
+            "file_manager": "File manager",
+            "email": "Email",
+            "music": "Music",
+        }
+        for row, (key, label) in enumerate(labels.items()):
+            grid.attach(Gtk.Label(label=label, xalign=0), 0, row, 1, 1)
+            entry = Gtk.Entry(text=self.settings["apps"][key])
+            entry.set_hexpand(True)
+            grid.attach(entry, 1, row, 1, 1)
+            self.fields[f"app_{key}"] = entry
+        note = Gtk.Label(label="Commands launch in their dedicated Qtile workspaces.", xalign=0)
+        note.get_style_context().add_class("dim-label")
+        grid.attach(note, 0, len(labels), 2, 1)
+        return grid
+
+    def input_page(self) -> Gtk.Widget:
+        grid = self.grid()
+        options = [
+            ("natural_scroll", "Natural scrolling"),
+            ("disable_middle_paste", "Disable middle-click paste"),
+        ]
+        for row, (key, label) in enumerate(options):
+            grid.attach(Gtk.Label(label=label, xalign=0), 0, row, 1, 1)
+            switch = Gtk.Switch(active=self.settings["input"][key], halign=Gtk.Align.END)
+            grid.attach(switch, 1, row, 1, 1)
+            self.fields[key] = switch
+
+        themes = [
+            ("gtk", "GTK theme", available_gtk_themes()),
+            ("icons", "Icon theme", available_icon_themes()),
+            ("cursor", "Cursor theme", available_cursor_themes()),
+        ]
+        for offset, (key, label, choices) in enumerate(themes, start=len(options)):
+            grid.attach(Gtk.Label(label=label, xalign=0), 0, offset, 1, 1)
+            combo = self.theme_combo(choices, self.settings["theme"][key])
+            grid.attach(combo, 1, offset, 1, 1)
+            self.fields[f"theme_{key}"] = combo
+        return grid
+
+    def setup_page(self) -> Gtk.Widget:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin=14)
+        self.dependency_label = Gtk.Label(xalign=0, yalign=0)
+        self.dependency_label.set_selectable(True)
+        box.pack_start(self.dependency_label, True, True, 0)
+        buttons = Gtk.Box(spacing=8)
+        refresh = Gtk.Button(label="Refresh Check")
+        refresh.connect("clicked", lambda *_: self.refresh_dependencies())
+        buttons.pack_start(refresh, False, False, 0)
+        setup = Gtk.Button(label="Quick Setup")
+        setup.get_style_context().add_class("suggested-action")
+        setup.connect("clicked", self.quick_setup)
+        buttons.pack_end(setup, False, False, 0)
+        box.pack_end(buttons, False, False, 0)
+        GLib.idle_add(self.refresh_dependencies)
+        return box
+
+    def refresh_dependencies(self) -> bool:
+        lines = ["Environment check", ""]
+        for label, command in DEPENDENCIES.items():
+            found = shutil.which(command) is not None
+            lines.append(f"{'✓' if found else '○'}  {label}")
+        missing = sum(shutil.which(command) is None for command in DEPENDENCIES.values())
+        lines.extend(["", f"{missing} missing item{'s' if missing != 1 else ''}"])
+        self.dependency_label.set_text("\n".join(lines))
+        return False
+
+    def gather(self) -> dict:
+        data = deep_defaults()
+        for key in ("border_width", "window_gap", "corner_radius", "blur_strength"):
+            data["appearance"][key] = int(self.fields[key].get_value())
+        for key in ("active_opacity", "inactive_opacity"):
+            data["appearance"][key] = round(self.fields[key].get_value(), 2)
+        for key in data["apps"]:
+            data["apps"][key] = self.fields[f"app_{key}"].get_text().strip()
+        for key in data["input"]:
+            data["input"][key] = self.fields[key].get_active()
+        for key in data["theme"]:
+            combo = self.fields[f"theme_{key}"]
+            data["theme"][key] = combo.get_child().get_text().strip()
+        return data
+
+    def apply(self, *_args) -> None:
+        try:
+            data = self.gather()
+            SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            SETTINGS_PATH.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+
+            picom = PICOM_PATH.read_text()
+            values = data["appearance"]
+            picom = replace_setting(picom, "corner-radius", str(values["corner_radius"]))
+            picom = replace_setting(picom, "active-opacity", f'{values["active_opacity"]:.2f}')
+            picom = replace_setting(picom, "inactive-opacity", f'{values["inactive_opacity"]:.2f}')
+            picom = replace_setting(picom, "blur-strength", str(values["blur_strength"]))
+            PICOM_PATH.write_text(picom)
+
+            parser = configparser.ConfigParser()
+            parser.read(GTK_PATH)
+            parser["Settings"]["gtk-theme-name"] = data["theme"]["gtk"]
+            parser["Settings"]["gtk-icon-theme-name"] = data["theme"]["icons"]
+            parser["Settings"]["gtk-cursor-theme-name"] = data["theme"]["cursor"]
+            with GTK_PATH.open("w") as stream:
+                parser.write(stream, space_around_delimiters=False)
+
+            parser4 = configparser.ConfigParser()
+            parser4.read(GTK4_PATH)
+            parser4["Settings"]["gtk-theme-name"] = data["theme"]["gtk"]
+            parser4["Settings"]["gtk-icon-theme-name"] = data["theme"]["icons"]
+            parser4["Settings"]["gtk-cursor-theme-name"] = data["theme"]["cursor"]
+            with GTK4_PATH.open("w") as stream:
+                parser4.write(stream, space_around_delimiters=False)
+
+            subprocess.run(
+                ["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-dark"],
+                check=False,
+            )
+            subprocess.run(
+                ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", data["theme"]["gtk"]],
+                check=False,
+            )
+
+            subprocess.run([str(INPUT_SCRIPT)], check=False)
+            subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"], check=False)
+            subprocess.run(["pkill", "-USR1", "picom"], check=False)
+            self.status.set_text("Applied. New application commands are active after Qtile reload.")
+        except Exception as error:
+            self.status.set_text(f"Could not apply: {error}")
+
+    def quick_setup(self, *_args) -> None:
+        self.status.set_text("Running setup…")
+
+        def run() -> None:
+            process = subprocess.run([str(REPO / "install.sh")], text=True, capture_output=True)
+            message = "Setup complete" if process.returncode == 0 else "Setup failed"
+            details = (process.stdout + process.stderr).strip().splitlines()
+            if details:
+                message += f": {details[-1]}"
+            GLib.idle_add(self.status.set_text, message)
+            GLib.idle_add(self.refresh_dependencies)
+
+        threading.Thread(target=run, daemon=True).start()
+
+
+def main() -> None:
+    install_gruvbox_theme()
+    window = SettingsWindow()
+    window.connect("destroy", Gtk.main_quit)
+    window.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+wallpaper_dir="$HOME/walls"
+state_file="${XDG_RUNTIME_DIR:-/tmp}/groovy-wallpaper-index"
+
+shopt -s nullglob nocaseglob
+wallpapers=(
+    "$wallpaper_dir"/*.jpg
+    "$wallpaper_dir"/*.jpeg
+    "$wallpaper_dir"/*.png
+    "$wallpaper_dir"/*.webp
+)
+
+count=${#wallpapers[@]}
+if ((count == 0)); then
+    notify-send "Wallpaper" "No images found in ~/walls" 2>/dev/null || true
+    exit 1
+fi
+
+index=0
+if [[ -r "$state_file" ]]; then
+    read -r index < "$state_file" || index=0
+fi
+
+index=$(((index + 1) % count))
+feh --no-fehbg --bg-fill "${wallpapers[$index]}"
+printf '%s\n' "$index" > "$state_file"

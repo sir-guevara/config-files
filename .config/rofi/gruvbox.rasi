@@ -59,9 +59,10 @@ search-icon {
 }
 
 entry {
-    expand: true;
+    expand: false;
+    width: 550px;
     padding: 0px;
-    horizontal-align: 0.0;
+    horizontal-align: 0;
     vertical-align: 0.5;
     placeholder: "Search applications...";
     placeholder-color: @muted;

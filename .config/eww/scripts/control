@@ -1,0 +1,32 @@
+#!/bin/sh
+
+case "$1" in
+    volume)
+        value=${2%%.*}
+        ~/.config/qtile/scripts/volume set "$value"
+        ;;
+    brightness)
+        value=${2%%.*}
+        ~/.config/qtile/scripts/brightness set "$value"
+        ;;
+    wifi-toggle)
+        ~/.config/qtile/scripts/connectivity wifi-toggle
+        ;;
+    bluetooth-toggle)
+        ~/.config/qtile/scripts/connectivity bluetooth-toggle
+        ;;
+    night-toggle)
+        marker="${XDG_RUNTIME_DIR:-/tmp}/groovy-night-mode"
+        output=$(xrandr --query | awk '/ connected primary| connected / {print $1; exit}')
+        if [ -f "$marker" ]; then
+            xrandr --output "$output" --gamma 1:1:1
+            rm -f "$marker"
+        else
+            xrandr --output "$output" --gamma 1:0.78:0.62
+            : > "$marker"
+        fi
+        ;;
+    dark-toggle)
+        ~/.config/qtile/scripts/theme-mode toggle
+        ;;
+esac

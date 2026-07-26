@@ -1,59 +1,16 @@
 #!/bin/sh
 
-THEME="$HOME/.config/rofi/quick-settings.rasi"
+config_dir="$HOME/.config/eww"
 
-volume="$(mixer vol 2>/dev/null | awk -F'[: ]+' '/vol/ {gsub("%","",$3); print $3; exit}')"
-[ -z "$volume" ] && volume="?"
+if ! eww --config "$config_dir" ping >/dev/null 2>&1; then
+    eww --config "$config_dir" daemon >/dev/null 2>&1
 
-wifi="$(ifconfig wlan0 2>/dev/null | awk -F': ' '/ssid/ {print $2; exit}')"
-[ -z "$wifi" ] && wifi="Disconnected"
-
-bluetooth="Off"
-if pgrep -x bluetoothd >/dev/null 2>&1; then
-    bluetooth="On"
+    attempts=0
+    while ! eww --config "$config_dir" ping >/dev/null 2>&1; do
+        attempts=$((attempts + 1))
+        [ "$attempts" -ge 20 ] && exit 1
+        sleep 0.05
+    done
 fi
 
-status="Wi-Fi: ${wifi}    Bluetooth: ${bluetooth}    Volume: ${volume}%"
-
-choice="$(
-    printf '%s\n' \
-        '󰖩  Wi-Fi' \
-        '󰂯  Bluetooth' \
-        '󰕾  Volume +' \
-        '󰖀  Volume -' \
-        '󰃠  Brightness +' \
-        '󰃞  Brightness -' |
-    rofi -dmenu \
-        -i \
-        -mesg "$status" \
-        -theme "$THEME"
-)"
-
-case "$choice" in
-    *Wi-Fi)
-        "$HOME/.config/qtile/scripts/wifi-menu" 2>/dev/null
-        ;;
-    *Bluetooth)
-        "$HOME/.config/qtile/scripts/bluetooth-menu" 2>/dev/null
-        ;;
-    *"Volume +")
-        mixer vol=+5%
-        ;;
-    *"Volume -")
-        mixer vol=-5%
-        ;;
-    *"Brightness +")
-        if command -v backlight >/dev/null 2>&1; then
-            backlight incr 5
-        elif command -v xbacklight >/dev/null 2>&1; then
-            xbacklight -inc 5
-        fi
-        ;;
-    *"Brightness -")
-        if command -v backlight >/dev/null 2>&1; then
-            backlight decr 5
-        elif command -v xbacklight >/dev/null 2>&1; then
-            xbacklight -dec 5
-        fi
-        ;;
-esac
+exec eww --config "$config_dir" open --toggle quick-settings-panel

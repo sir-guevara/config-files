@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Apply libinput preferences to every pointer exposed by XInput.
+# Devices without these properties are ignored.
+command -v xinput >/dev/null 2>&1 || exit 0
+
+settings="$HOME/.config/groovy-settings/settings.json"
+natural_enabled=1
+middle_disabled=1
+if [ -r "$settings" ]; then
+    values=$(python3 -c 'import json,sys; s=json.load(open(sys.argv[1])).get("input",{}); print(int(s.get("natural_scroll",True)), int(s.get("disable_middle_paste",True)))' "$settings" 2>/dev/null || true)
+    natural_enabled=${values%% *}
+    middle_disabled=${values##* }
+fi
+
+xinput list --id-only | while IFS= read -r device_id; do
+    properties=$(xinput list-props "$device_id" 2>/dev/null) || continue
+
+    natural_scroll=$(printf '%s\n' "$properties" | sed -n \
+        's/.*libinput Natural Scrolling Enabled (\([0-9][0-9]*\)):.*/\1/p')
+    if [ -n "$natural_scroll" ]; then
+        xinput set-prop "$device_id" "$natural_scroll" "$natural_enabled"
+    fi
+
+    middle_emulation=$(printf '%s\n' "$properties" | sed -n \
+        's/.*libinput Middle Emulation Enabled (\([0-9][0-9]*\)):.*/\1/p')
+    if [ -n "$middle_emulation" ]; then
+        xinput set-prop "$device_id" "$middle_emulation" 0
+    fi
+
+    button_map=$(xinput get-button-map "$device_id" 2>/dev/null) || continue
+    if [ "$middle_disabled" = 1 ]; then
+        button_map=$(printf '%s\n' "$button_map" | sed 's/^[^ ]* [^ ]*/1 0/')
+    else
+        button_map=$(printf '%s\n' "$button_map" | sed 's/^[^ ]* [^ ]*/1 2/')
+    fi
+    # Word splitting is intentional: xinput expects one argument per button.
+    # shellcheck disable=SC2086
+    xinput set-button-map "$device_id" $button_map 2>/dev/null || true
+done

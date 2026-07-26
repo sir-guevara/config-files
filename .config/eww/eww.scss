@@ -1,306 +1,112 @@
-/* =========================================================
-   GROOVY CONTROL CENTER
-   FreeBSD + Qtile + Eww
-   ========================================================= */
-
-
-/* ---------------------------------------------------------
-   COLORS
-   --------------------------------------------------------- */
-
 $bg: #282828;
 $surface: #32302f;
 $surface-alt: #3c3836;
 $border: #504945;
-
 $fg: #ebdbb2;
 $muted: #a89984;
-
-$accent: #d79921;
-$accent-bright: #fabd2f;
-
-
-/* ---------------------------------------------------------
-   RESET
-   --------------------------------------------------------- */
+$yellow: #d79921;
+$yellow-bright: #fabd2f;
+$blue: #458588;
+$aqua: #689d6a;
+$red: #cc241d;
 
 * {
-    all: unset;
-
-    font-family: "JetBrainsMono Nerd Font";
-    font-size: 11px;
-
-    color: $fg;
+  all: unset;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 11px;
+  color: $fg;
 }
 
-
-/* ---------------------------------------------------------
-   MAIN PANEL
-   --------------------------------------------------------- */
-
-.quick-settings {
-    min-width: 304px;
-
-    padding: 10px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $bg;
+.panel {
+  padding: 16px;
+  background: rgba($bg, 0.90);
+  border: 1px solid $border;
+  border-radius: 16px;
 }
 
+.header { margin: 1px 2px 16px; }
+.title { font-size: 16px; font-weight: 700; }
+.time { color: $muted; }
 
-/* ---------------------------------------------------------
-   HEADER
-   --------------------------------------------------------- */
-
-.panel-header {
-    min-height: 46px;
-
-    padding: 8px 9px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $surface;
+.quick-grid { margin-bottom: 8px; }
+.quick-button {
+  min-height: 66px;
+  background: rgba($surface, 0.94);
+  border: 1px solid $border;
+  border-radius: 11px;
 }
+.quick-button:hover { background: $surface-alt; border-color: $muted; }
+.quick-button.active { background: rgba($surface-alt, 0.98); border-color: $yellow; }
+.quick-button.active .quick-icon { color: $yellow-bright; }
+.quick-icon { font-size: 18px; color: $muted; }
+.quick-label { font-size: 10px; }
 
-.time {
-    font-size: 14px;
-    font-weight: bold;
-    color: $fg;
-}
-
-.date {
-    font-size: 10px;
-    color: $muted;
-}
-
-
-/* ---------------------------------------------------------
-   HEADER ACTIONS
-   --------------------------------------------------------- */
-
-.action-button {
-    min-width: 34px;
-    min-height: 34px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $bg;
-}
-
-.action-button:hover {
-    border-color: $accent;
-    background-color: $surface-alt;
-}
-
-.action-button:active {
-    background-color: $accent;
-}
-
-.action-icon {
-    font-size: 14px;
-    color: $muted;
-}
-
-.action-button:hover .action-icon {
-    color: $accent-bright;
-}
-
-.action-button:active .action-icon {
-    color: $bg;
-}
-
-
-/* ---------------------------------------------------------
-   SLIDER PANEL
-   --------------------------------------------------------- */
-
-.slider-panel {
-    padding: 12px 11px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $surface;
-}
+.device-link { padding: 7px 10px; margin-bottom: 8px; color: $muted; }
+.device-link:hover { color: $yellow-bright; }
 
 .slider-row {
-    min-height: 28px;
+  min-height: 38px;
+  padding: 3px 10px;
+  margin-bottom: 7px;
+  background: rgba($surface, 0.72);
+  border-radius: 10px;
 }
-
-.slider-icon {
-    min-width: 24px;
-
-    font-size: 14px;
-    color: $muted;
-}
-
-.slider-value {
-    min-width: 38px;
-
-    font-size: 10px;
-    color: $muted;
-}
-
-
-/* Volume icon button */
-
-.slider-mute-button {
-    min-width: 24px;
-    min-height: 24px;
-
-    border: 1px solid transparent;
-    border-radius: 4px;
-}
-
-.slider-mute-button:hover {
-    border-color: $border;
-    background-color: $surface-alt;
-}
-
-.slider-mute-icon {
-    font-size: 14px;
-    color: $muted;
-}
-
-.slider-mute-button:hover .slider-mute-icon {
-    color: $accent-bright;
-}
-
-
-/* Slider track */
-
-.control-scale trough {
-    min-height: 6px;
-
-    border: 1px solid $border;
-    border-radius: 3px;
-
-    background-color: $bg;
-}
-
-.control-scale highlight {
-    min-height: 6px;
-
-    border-radius: 3px;
-
-    background-color: $accent;
-}
-
+.slider-icon, .icon-button { min-width: 22px; font-size: 15px; color: $muted; }
+.icon-button:hover { color: $yellow-bright; }
+.percent { min-width: 34px; color: $muted; font-size: 10px; }
+.control-scale trough { min-height: 6px; border-radius: 6px; background: $surface-alt; }
+.control-scale highlight { min-height: 6px; border-radius: 6px; background: $yellow; }
 .control-scale slider {
-    min-width: 12px;
-    min-height: 12px;
-
-    margin: -4px;
-
-    border: 1px solid $accent-bright;
-    border-radius: 6px;
-
-    background-color: $accent;
+  min-width: 14px; min-height: 14px; margin: -5px;
+  border-radius: 50%; background: $yellow-bright;
 }
 
-.control-scale slider:hover {
-    background-color: $accent-bright;
+.media-card, .system-card, .notifications {
+  margin-top: 9px;
+  padding: 13px;
+  background: rgba($surface, 0.90);
+  border: 1px solid $border;
+  border-radius: 12px;
 }
-
-
-/* ---------------------------------------------------------
-   CONNECTIVITY
-   --------------------------------------------------------- */
-
-.connectivity-panel {
-    background-color: transparent;
+.section-title { font-weight: 700; margin-bottom: 3px; }
+.playing-badge {
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: $yellow;
+  color: $bg;
+  font-size: 8px;
+  font-weight: 700;
 }
-
-.status-row {
-    min-height: 40px;
-
-    padding: 0 10px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $surface;
+.album-art {
+  min-width: 82px; min-height: 82px;
+  border: 1px solid $border;
+  border-radius: 11px; background: $surface-alt;
 }
-
-.status-row:hover {
-    border-color: $accent;
-    background-color: $surface-alt;
+.album-art label { font-size: 30px; color: $muted; }
+.artist { color: $yellow-bright; font-size: 10px; }
+.song { margin-top: 3px; font-size: 13px; font-weight: 700; }
+.media-controls button {
+  min-width: 32px; min-height: 32px;
+  border-radius: 16px;
+  background: $surface-alt;
+  font-size: 17px; color: $muted;
 }
+.media-controls button:hover { color: $yellow-bright; }
+.media-controls .play { background: $yellow; color: $bg; }
+.media-controls .play:hover { background: $yellow-bright; color: $bg; }
 
-.status-row:active {
-    background-color: $accent;
-}
+.metric { min-height: 22px; }
+.metric-icon { min-width: 18px; color: $aqua; }
+.metric-value, .muted { color: $muted; font-size: 10px; }
+.tools { margin-top: 7px; }
+.tools button { padding: 6px; border-radius: 6px; background: $surface-alt; color: $muted; }
+.tools button:hover { color: $yellow-bright; }
+.notifications:hover { border-color: $yellow; }
 
-.status-icon {
-    min-width: 22px;
+.footer { margin-top: 10px; }
+.footer-button { min-height: 52px; border-radius: 10px; background: rgba($surface, 0.90); }
+.footer-button:hover { background: $surface-alt; color: $yellow-bright; }
+.footer-icon { font-size: 15px; }
+.footer-button:last-child:hover { color: $red; }
 
-    font-size: 14px;
-    color: $muted;
-}
-
-.status-title {
-    font-size: 10px;
-    font-weight: bold;
-    color: $fg;
-}
-
-.status-value {
-    font-size: 9px;
-    color: $muted;
-}
-
-.status-arrow {
-    min-width: 12px;
-
-    font-size: 10px;
-    color: $muted;
-}
-
-
-/* Active connectivity */
-
-.status-active {
-    border-color: $accent;
-}
-
-.status-active .status-icon {
-    color: $accent-bright;
-}
-
-
-/* Hover behavior */
-
-.status-row:hover .status-icon,
-.status-row:hover .status-arrow {
-    color: $accent-bright;
-}
-
-.status-row:active .status-icon,
-.status-row:active .status-title,
-.status-row:active .status-value,
-.status-row:active .status-arrow {
-    color: $bg;
-}
-
-
-/* ---------------------------------------------------------
-   TOOLTIPS
-   --------------------------------------------------------- */
-
-tooltip {
-    padding: 6px 8px;
-
-    border: 1px solid $border;
-    border-radius: 4px;
-
-    background-color: $bg;
-}
-
-tooltip label {
-    font-size: 10px;
-    color: $fg;
-}
+tooltip { padding: 7px; border-radius: 6px; background: $bg; border: 1px solid $border; }

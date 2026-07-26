@@ -1,0 +1,59 @@
+/* Shared minimal Gruvbox chrome for Firefox and Thunderbird. */
+:root {
+  --toolbar-bgcolor: #1d2021 !important;
+  --toolbar-color: #ebdbb2 !important;
+  --toolbar-field-background-color: #282828 !important;
+  --toolbar-field-color: #ebdbb2 !important;
+  --toolbar-field-border-color: #504945 !important;
+  --lwt-accent-color: #1d2021 !important;
+  --lwt-text-color: #ebdbb2 !important;
+  --sidebar-background-color: #282828 !important;
+  --sidebar-text-color: #ebdbb2 !important;
+  --button-background-color: #32302f !important;
+  --button-hover-bgcolor: #3c3836 !important;
+  --focus-outline-color: #d79921 !important;
+  --tab-selected-bgcolor: #3c3836 !important;
+  --tabs-navbar-separator-color: #504945 !important;
+}
+
+#navigator-toolbox,
+#toolbar-menubar,
+#TabsToolbar,
+#nav-bar,
+#PersonalToolbar,
+#messengerWindow,
+#mail-toolbox,
+#navigation-toolbox,
+#folderPane,
+#threadPane,
+#messageBrowser {
+  background-color: #1d2021 !important;
+  color: #ebdbb2 !important;
+  border-color: #504945 !important;
+  box-shadow: none !important;
+}
+
+.tab-background,
+.tabmail-tab,
+toolbarbutton,
+#urlbar-background,
+#searchbar {
+  border-radius: 5px !important;
+}
+
+.tabbrowser-tab[selected] .tab-background,
+.tabmail-tab[selected] {
+  background-color: #3c3836 !important;
+  box-shadow: inset 0 -2px #d79921 !important;
+}
+
+#urlbar-background,
+#searchbar {
+  background-color: #282828 !important;
+  border: 1px solid #504945 !important;
+}
+
+#urlbar[focused] > #urlbar-background,
+#searchbar:focus-within {
+  border-color: #d79921 !important;
+}

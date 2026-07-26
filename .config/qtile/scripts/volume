@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+    up) wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ ;;
+    down) wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+    mute) wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+    set) wpctl set-volume @DEFAULT_AUDIO_SINK@ "${2%%.*}%" ;;
+    *) printf 'usage: %s {up|down|mute|set VALUE}\n' "$0" >&2; exit 2 ;;
+esac
+
+status=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+value=$(printf '%s\n' "$status" | awk '{printf "%d", $2 * 100}')
+
+if printf '%s\n' "$status" | grep -q '\[MUTED\]'; then
+    dunstify -a Settings -r 9101 -u low \
+        -i audio-volume-muted-symbolic "Volume" "Muted"
+else
+    dunstify -a Settings -r 9101 -u low -h "int:value:$value" \
+        -i audio-volume-high-symbolic "Volume" "${value}%"
+fi

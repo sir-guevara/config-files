@@ -1,0 +1,12 @@
+/* Theme browser-owned pages without recoloring normal websites or email. */
+@-moz-document url-prefix("about:"), url-prefix("chrome://") {
+  :root {
+    color-scheme: dark !important;
+    --in-content-page-background: #282828 !important;
+    --in-content-page-color: #ebdbb2 !important;
+    --in-content-primary-button-background: #d79921 !important;
+    --in-content-primary-button-text-color: #1d2021 !important;
+    --in-content-box-background: #32302f !important;
+    --in-content-box-border-color: #504945 !important;
+  }
+}

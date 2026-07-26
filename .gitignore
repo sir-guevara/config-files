@@ -1,4 +1,95 @@
+# Operating-system metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE state
+*~
+*.swp
+*.swo
+*.swn
+*.tmp
+*.orig
+*.rej
+.idea/
+.vscode/
+
+# Backups, logs, and runtime files
+*.bak
+*.backup
+*.log
+*.pid
+*.pid.lock
+*.sock
+backups/
+cache/
+logs/
+tmp/
+
+# Language and tool caches
 __pycache__/
 *.py[cod]
-*.bak
-backups/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.direnv/
+.envrc.local
+
+# Machine-local environment and secret files
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.*
+
+# Local shell and REPL history
+.*_history
+.lesshst
+.python_history
+.node_repl_history
+.sqlite_history
+
+# X11 session and authentication state
+.Xauthority
+.ICEauthority
+.serverauth.*
+.xsession-errors
+.xsession-errors.old
+
+# User caches and ephemeral desktop state
+.cache/
+.local/state/
+.local/share/Trash/
+.local/share/recently-used.xbel
+.config/recently-used.xbel
+.config/gtk-3.0/bookmarks
+.config/monitors.xml
+.config/QtProject.conf
+
+# Application runtime state
+.config/qtile/*.log
+.config/qtile/session/
+.config/alacritty/*.log
+.config/starship/cache/
+.config/pulse/cookie
+
+# Private identity and key stores
+.ssh/
+.gnupg/
+.pki/
+.local/share/keyrings/
+
+# Machine identity and hardware-local overrides
+machine-id
+*.machine-local
+*.hardware-local
+*.display-local

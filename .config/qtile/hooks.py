@@ -14,7 +14,6 @@ Responsible for:
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 
 from libqtile import hook, qtile
@@ -22,9 +21,12 @@ from libqtile import hook, qtile
 from defaults import (
     DISPLAY_OUTPUT,
     DISPLAY_RESOLUTION,
+    DUNST_CONFIG,
     KEY_REPEAT_DELAY,
     KEY_REPEAT_RATE,
+    PICOM_CONFIG,
     WALLPAPER,
+    script,
 )
 
 
@@ -46,24 +48,6 @@ def run(command):
         pass
 
 
-def run_once(command, process=None):
-    """
-    Run a command only if it is not already running.
-    """
-
-    process = process or os.path.basename(command[0])
-
-    try:
-        if subprocess.call(
-            ["pgrep", "-x", process],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ):
-            run(command)
-    except Exception:
-        pass
-
-
 # ---------------------------------------------------------
 # Startup Once
 # ---------------------------------------------------------
@@ -71,23 +55,19 @@ def run_once(command, process=None):
 @hook.subscribe.startup_once
 def startup_once():
 
-    # Compositor
-    run_once(["picom"])
+    # Composite translucent windows with blur and rounded corners.
+    run(["picom", "--daemon", "--config", str(PICOM_CONFIG)])
 
-    # Notification daemon
-    run_once(["dunst"])
+    # Lightweight desktop and hardware notifications.
+    run(["dunst", "-conf", str(DUNST_CONFIG)])
 
-    # Clipboard manager
-    run_once(["copyq"])
+    # NetworkManager lives in the existing Qtile system tray.
+    run(["nm-applet"])
 
-    # LXQt PolicyKit Agent
-    lxqt_agent = shutil.which("lxqt-policykit-agent")
-
-    if lxqt_agent:
-        run_once(
-            [lxqt_agent],
-            process="lxqt-policykit-agent",
-        )
+    # Restore the wallpaper without adding a desktop daemon.
+    wallpaper = os.path.expanduser(str(WALLPAPER))
+    if os.path.exists(wallpaper):
+        run(["feh", "--no-fehbg", "--bg-fill", wallpaper])
 
 
 # ---------------------------------------------------------
@@ -96,6 +76,8 @@ def startup_once():
 
 @hook.subscribe.startup
 def startup():
+
+    run([script("input-settings")])
 
     run([
         "xrandr",
@@ -113,15 +95,6 @@ def startup():
         str(KEY_REPEAT_RATE),
     ])
 
-    wallpaper = os.path.expanduser(str(WALLPAPER))
-
-    if os.path.exists(wallpaper):
-
-        run([
-            "feh",
-            "--bg-fill",
-            wallpaper,
-        ])
 
 
 # ---------------------------------------------------------

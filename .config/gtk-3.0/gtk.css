@@ -1,0 +1,54 @@
+/* Minimal Gruvbox treatment for GTK applications such as Thunar. */
+@define-color theme_bg_color #282828;
+@define-color theme_fg_color #ebdbb2;
+@define-color theme_base_color #1d2021;
+@define-color theme_text_color #ebdbb2;
+@define-color theme_selected_bg_color #d79921;
+@define-color theme_selected_fg_color #1d2021;
+
+window,
+dialog,
+.background {
+  background-color: #282828;
+  color: #ebdbb2;
+}
+
+headerbar,
+toolbar,
+menubar,
+notebook > header {
+  background-color: #1d2021;
+  color: #ebdbb2;
+  border-color: #504945;
+  box-shadow: none;
+}
+
+treeview,
+iconview,
+.view,
+sidebar,
+placessidebar {
+  background-color: #282828;
+  color: #ebdbb2;
+}
+
+treeview:selected,
+iconview:selected,
+.view:selected,
+placessidebar row:selected {
+  background-color: #d79921;
+  color: #1d2021;
+}
+
+entry,
+button {
+  background-color: #32302f;
+  color: #ebdbb2;
+  border-color: #504945;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #3c3836;
+  border-color: #d79921;
+}

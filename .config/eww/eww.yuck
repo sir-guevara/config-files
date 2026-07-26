@@ -1,265 +1,117 @@
-;; =========================================================
-;; GROOVY CONTROL CENTER
-;; FreeBSD + Qtile + Eww
-;; =========================================================
+(defpoll state :interval "3s" `~/.config/eww/scripts/status`)
 
+(defwidget section-title [text]
+  (label :class "section-title" :halign "start" :text text))
 
-;; ---------------------------------------------------------
-;; LIVE SYSTEM VALUES
-;; ---------------------------------------------------------
+(defwidget quick-button [class icon text command]
+  (button :class "quick-button ${class}" :onclick command
+    (box :orientation "v" :spacing 5
+      (label :class "quick-icon" :text icon)
+      (label :class "quick-label" :text text))))
 
-(defpoll current_time
-  :interval "20s"
-  "date '+%I:%M %p'")
+(defwidget metric [icon name value]
+  (box :class "metric" :spacing 9
+    (label :class "metric-icon" :text icon)
+    (label :hexpand true :halign "start" :text name)
+    (label :class "metric-value" :text value)))
 
-(defpoll current_date
-  :interval "60s"
-  "date '+%A, %B %d'")
-
-(defpoll volume_percent
-  :interval "1s"
-  "~/.config/eww/scripts/audio.sh get-volume")
-
-(defpoll mute_status
-  :interval "1s"
-  "~/.config/eww/scripts/audio.sh get-mute")
-
-(defpoll brightness_percent
-  :interval "2s"
-  "~/.config/eww/scripts/brightness.sh get")
-
-(defpoll wifi_status
-  :interval "4s"
-  "~/.config/eww/scripts/network.sh status")
-
-(defpoll wifi_name
-  :interval "4s"
-  "~/.config/eww/scripts/network.sh ssid")
-
-(defpoll bluetooth_status
-  :interval "4s"
-  "~/.config/eww/scripts/bluetooth.sh status")
-
-
-;; ---------------------------------------------------------
-;; HEADER ACTION BUTTON
-;; ---------------------------------------------------------
-
-(defwidget action-button [icon tooltip command]
-  (button
-    :class "action-button"
-    :tooltip tooltip
-    :onclick command
-
-    (label
-      :class "action-icon"
-      :text icon)))
-
-
-;; ---------------------------------------------------------
-;; SLIDER ROW
-;; ---------------------------------------------------------
-
-(defwidget control-slider [icon value command]
-  (box
-    :class "slider-row"
-    :orientation "h"
-    :space-evenly false
-    :spacing 10
-
-    (label
-      :class "slider-icon"
-      :text icon)
-
-    (scale
-      :class "control-scale"
-      :hexpand true
-      :min 0
-      :max 100
-      :value value
-      :onchange command)
-
-    (label
-      :class "slider-value"
-      :text "${value}%")))
-
-
-;; ---------------------------------------------------------
-;; STATUS ROW
-;; ---------------------------------------------------------
-
-(defwidget status-row [icon title value active command]
-  (button
-    :class {active ? "status-row status-active" : "status-row"}
-    :onclick command
-
-    (box
-      :orientation "h"
-      :space-evenly false
-      :spacing 11
-
-      (label
-        :class "status-icon"
-        :text icon)
-
-      (label
-        :class "status-title"
-        :halign "start"
-        :hexpand true
-        :text title)
-
-      (label
-        :class "status-value"
-        :halign "end"
-        :limit-width 18
-        :show-truncated true
-        :text value)
-
-      (label
-        :class "status-arrow"
-        :text ""))))
-
-
-;; ---------------------------------------------------------
-;; HEADER
-;; ---------------------------------------------------------
-
-(defwidget panel-header []
-  (box
-    :class "panel-header"
-    :orientation "h"
-    :space-evenly false
-    :spacing 8
-
-    (box
-      :class "date-time"
-      :orientation "v"
-      :space-evenly false
-      :hexpand true
-      :spacing 1
-
-      (label
-        :class "time"
-        :halign "start"
-        :text current_time)
-
-      (label
-        :class "date"
-        :halign "start"
-        :text current_date))
-
-    (action-button
-      :icon ""
-      :tooltip "Lock"
-      :command "~/.config/qtile/scripts/lock-screen")
-
-    (action-button
-      :icon ""
-      :tooltip "Power"
-      :command "~/.config/qtile/scripts/power-menu")))
-
-
-;; ---------------------------------------------------------
-;; AUDIO AND BRIGHTNESS
-;; ---------------------------------------------------------
-
-(defwidget slider-panel []
-  (box
-    :class "slider-panel"
-    :orientation "v"
-    :space-evenly false
-    :spacing 14
-
-    (box
-      :orientation "h"
-      :space-evenly false
-      :spacing 4
-
-      (button
-        :class "slider-mute-button"
-        :tooltip {mute_status == "true" ? "Unmute" : "Mute"}
-        :onclick "~/.config/eww/scripts/audio.sh toggle-mute"
-
-        (label
-          :class "slider-mute-icon"
-          :text {mute_status == "true" ? "󰖁" : "󰕾"}))
-
-      (scale
-        :class "control-scale"
-        :hexpand true
-        :min 0
-        :max 100
-        :value volume_percent
-        :onchange "~/.config/eww/scripts/audio.sh set-volume {}")
-
-      (label
-        :class "slider-value"
-        :text "${volume_percent}%"))
-
-    (control-slider
-      :icon "󰃠"
-      :value brightness_percent
-      :command "~/.config/eww/scripts/brightness.sh set {}")))
-
-
-;; ---------------------------------------------------------
-;; CONNECTIVITY
-;; ---------------------------------------------------------
-
-(defwidget connectivity-panel []
-  (box
-    :class "connectivity-panel"
-    :orientation "v"
-    :space-evenly false
-    :spacing 6
-
-    (status-row
-      :icon "󰖩"
-      :title "Wi-Fi"
-      :value wifi_name
-      :active {wifi_status == "Connected"}
-      :command "~/.config/qtile/scripts/wifi-menu")
-
-    (status-row
-      :icon "󰂯"
-      :title "Bluetooth"
-      :value bluetooth_status
-      :active {bluetooth_status == "On"}
-      :command "~/.config/qtile/scripts/bluetooth-menu")))
-
-
-;; ---------------------------------------------------------
-;; COMPLETE PANEL
-;; ---------------------------------------------------------
+(defwidget footer-button [icon text command]
+  (button :class "footer-button" :onclick command
+    (box :orientation "v" :spacing 4
+      (label :class "footer-icon" :text icon)
+      (label :text text))))
 
 (defwidget quick-settings []
-  (box
-    :class "quick-settings"
-    :orientation "v"
-    :space-evenly false
-    :spacing 8
+  (box :class "panel" :orientation "v" :space-evenly false
+    (box :class "header" :space-evenly false
+      (label :class "title" :hexpand true :halign "start" :text "Quick Settings")
+      (label :class "time" :text {state.time}))
 
-    (panel-header)
-    (slider-panel)
-    (connectivity-panel)))
+    (box :class "quick-grid" :space-evenly true :spacing 8
+      (quick-button
+        :class {state.wifi_on ? "active" : ""}
+        :icon "󰖩" :text "Wi-Fi"
+        :command "~/.config/eww/scripts/control wifi-toggle")
+      (quick-button
+        :class {state.bluetooth_on ? "active" : ""}
+        :icon "󰂯" :text "Bluetooth"
+        :command "~/.config/eww/scripts/control bluetooth-toggle")
+      (quick-button
+        :class {state.night_on ? "active" : ""}
+        :icon "󰖔" :text "Night"
+        :command "~/.config/eww/scripts/control night-toggle")
+      (quick-button
+        :class {state.dark_on ? "active" : ""}
+        :icon "󰔎" :text "Dark"
+        :command "~/.config/eww/scripts/control dark-toggle"))
 
+    (button :class "device-link" :onclick "~/.config/eww/scripts/open-tool network"
+      (label :halign "start" :text "${state.ssid}  ·  Network settings"))
 
-;; ---------------------------------------------------------
-;; WINDOW
-;; ---------------------------------------------------------
+    (box :class "slider-row" :spacing 9
+      (button :class "icon-button" :onclick "~/.config/eww/scripts/open-tool sound" (label :text "󰕾"))
+      (scale :class "control-scale" :hexpand true :min 0 :max 100
+        :value {state.volume} :onchange "~/.config/eww/scripts/control volume {}")
+      (label :class "percent" :text "${state.volume}%"))
+
+    (box :class "slider-row" :spacing 9
+      (label :class "slider-icon" :text "󰃠")
+      (scale :class "control-scale" :hexpand true :min 5 :max 100
+        :value {state.brightness} :onchange "~/.config/eww/scripts/control brightness {}")
+      (label :class "percent" :text "${state.brightness}%"))
+
+    (box :class "media-card" :orientation "v" :spacing 11 :visible {state.playing}
+      (box :class "media-heading"
+        (label :class "section-title" :hexpand true :halign "start" :text "Now Playing")
+        (label :class "playing-badge" :text "PLAYING"))
+      (box :spacing 14
+        (box :class "album-art"
+          (image :visible {state.album_art != ""} :path {state.album_art}
+            :image-width 82 :image-height 82 :preserve-aspect-ratio true)
+          (label :visible {state.album_art == ""} :text "󰝚"))
+        (box :orientation "v" :hexpand true :valign "center"
+          (label :class "artist" :halign "start" :limit-width 24
+            :show-truncated true :text {state.artist})
+          (label :class "song" :halign "start" :limit-width 24
+            :show-truncated true :text {state.song})))
+      (box :class "media-controls" :halign "center" :spacing 34
+        (button :onclick "playerctl previous" (label :text "󰒮"))
+        (button :class "play" :onclick "playerctl play-pause"
+          (label :text {state.playing ? "󰏤" : "󰐊"}))
+        (button :onclick "playerctl next" (label :text "󰒭"))))
+
+    (box :class "system-card" :orientation "v" :spacing 5
+      (section-title :text "System")
+      (box :space-evenly true :spacing 12
+        (metric :icon "󰍛" :name "CPU" :value "${state.cpu}%")
+        (metric :icon "󰔏" :name "Temp" :value {state.temp}))
+      (metric :icon "󰘚" :name "RAM" :value {state.ram})
+      (metric :icon "󰋊" :name "Storage" :value {state.storage})
+      (metric :icon "󰔟" :name "Uptime" :value {state.uptime})
+      (box :class "tools" :space-evenly true :spacing 6
+        (button :onclick "~/.config/eww/scripts/open-tool mouse" (label :text "Mouse"))
+        (button :onclick "~/.config/eww/scripts/open-tool screens" (label :text "Screens"))
+        (button :onclick "~/.config/eww/scripts/open-tool bluetooth" (label :text "Bluetooth"))))
+
+    (button :class "notifications" :onclick "eww close quick-settings-panel"
+      (box
+        (label :hexpand true :halign "start" :text "󰂚  Notifications")
+        (label :class "muted" :text "Quiet")))
+
+    (box :class "footer" :space-evenly true :spacing 6
+      (footer-button :icon "󰌾" :text "Lock"
+        :command "~/.config/qtile/scripts/lock-screen")
+      (footer-button :icon "󰤄" :text "Suspend"
+        :command "systemctl suspend")
+      (footer-button :icon "󰜉" :text "Restart"
+        :command "systemctl reboot")
+      (footer-button :icon "󰐥" :text "Power"
+        :command "systemctl poweroff"))))
 
 (defwindow quick-settings-panel
   :monitor 0
-
-  :geometry
-    (geometry
-      :x "-20px"
-      :y "42px"
-      :width "330px"
-      :anchor "top right")
-
+  :geometry (geometry :x "10px" :y "44px" :width "420px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable true
-
   (quick-settings))

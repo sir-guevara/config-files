@@ -46,18 +46,8 @@ floating_layout = Floating(
         Match(wm_class="zenity"),
         Match(wm_class="Yad"),
         Match(wm_class="Pavucontrol"),
-
-        # Calculator
-        Match(wm_class="qalculate-gtk"),
-
-        # Bluetooth
-        Match(wm_class="blueman-manager"),
-
-        # Network manager
-        Match(wm_class="nm-connection-editor"),
-
-        # CopyQ
-        Match(wm_class="copyq"),
+        Match(wm_class="Lxinput"),
+        Match(wm_class="Arandr"),
 
         # Rofi
         Match(wm_class="rofi"),

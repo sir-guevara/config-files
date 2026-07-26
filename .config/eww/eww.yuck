@@ -1,22 +1,35 @@
 (defpoll state :interval "3s" `~/.config/eww/scripts/status`)
+(defvar panel_reveal true)
 
 (defwidget section-title [text]
   (label :class "section-title" :halign "start" :text text))
 
-(defwidget quick-button [class icon text command]
-  (button :class "quick-button ${class}" :onclick command
-    (box :orientation "v" :spacing 5
-      (label :class "quick-icon" :text icon)
-      (label :class "quick-label" :text text))))
+(defwidget connect-button [class icon text status command]
+  (button :class "connect-button ${class}" :onclick command
+    (box :orientation "h" :spacing 11
+      (box :class "action-icon-wrap" (label :class "action-icon" :text icon))
+      (box :orientation "v" :hexpand true :valign "center"
+        (label :class "action-title" :halign "start" :text text)
+        (label :class "action-status" :halign "start" :limit-width 18
+          :show-truncated true :text status))
+      (label :class "action-chevron" :text "›"))))
 
-(defwidget metric [icon name value]
-  (box :class "metric" :spacing 9
+(defwidget mode-button [class icon text command]
+  (button :class "mode-button ${class}" :onclick command
+    (box :orientation "v" :spacing 7
+      (box :class "action-icon-wrap" :hexpand false :vexpand false
+        :halign "center" :valign "center"
+        (label :class "action-icon" :halign "center" :valign "center" :text icon))
+      (label :class "action-title" :text text))))
+
+(defwidget metric [class icon name value]
+  (box :class "metric ${class}" :spacing 9
     (label :class "metric-icon" :text icon)
     (label :hexpand true :halign "start" :text name)
     (label :class "metric-value" :text value)))
 
-(defwidget footer-button [icon text command]
-  (button :class "footer-button" :onclick command
+(defwidget footer-button [class icon text command]
+  (button :class "footer-button ${class}" :onclick command
     (box :orientation "v" :spacing 4
       (label :class "footer-icon" :text icon)
       (label :text text))))
@@ -24,94 +37,80 @@
 (defwidget quick-settings []
   (box :class "panel" :orientation "v" :space-evenly false
     (box :class "header" :space-evenly false
-      (label :class "title" :hexpand true :halign "start" :text "Quick Settings")
+      (label :class "title" :hexpand true :halign "start" :text "Control Center")
       (label :class "time" :text {state.time}))
 
-    (box :class "quick-grid" :space-evenly true :spacing 8
-      (quick-button
-        :class {state.wifi_on ? "active" : ""}
-        :icon "󰖩" :text "Wi-Fi"
-        :command "~/.config/eww/scripts/control wifi-toggle")
-      (quick-button
-        :class {state.bluetooth_on ? "active" : ""}
-        :icon "󰂯" :text "Bluetooth"
-        :command "~/.config/eww/scripts/control bluetooth-toggle")
-      (quick-button
-        :class {state.night_on ? "active" : ""}
-        :icon "󰖔" :text "Night"
-        :command "~/.config/eww/scripts/control night-toggle")
-      (quick-button
-        :class {state.dark_on ? "active" : ""}
-        :icon "󰔎" :text "Dark"
-        :command "~/.config/eww/scripts/control dark-toggle"))
+    (box :class "action-grid" :homogeneous true :spacing 8
+      (mode-button :class {state.wifi_on ? "wifi active" : "wifi"}
+        :icon "󰖩" :text "Wi-Fi" :command "~/.config/eww/scripts/control wifi-toggle")
+      (mode-button :class {state.bluetooth_on ? "bluetooth active" : "bluetooth"}
+        :icon "󰂯" :text "Bluetooth" :command "~/.config/eww/scripts/control bluetooth-toggle")
+      (mode-button :class {state.night_on ? "night active" : "night"}
+        :icon "󰖔" :text "Night" :command "~/.config/eww/scripts/control night-toggle")
+      (mode-button :class {state.dark_on ? "dark active" : "dark"}
+        :icon "󰔎" :text "Dark" :command "~/.config/eww/scripts/control dark-toggle"))
 
     (button :class "device-link" :onclick "~/.config/eww/scripts/open-tool network"
-      (label :halign "start" :text "${state.ssid}  ·  Network settings"))
+      (box (label :class "network-icon" :text "󰤨")
+        (label :hexpand true :halign "start" :limit-width 28 :show-truncated true :text {state.ssid})
+        (label :class "muted" :text "Manage  ›")))
 
-    (box :class "slider-row" :spacing 9
+    (box :class "slider-row volume-row" :spacing 9
       (button :class "icon-button" :onclick "~/.config/eww/scripts/open-tool sound" (label :text "󰕾"))
       (scale :class "control-scale" :hexpand true :min 0 :max 100
         :value {state.volume} :onchange "~/.config/eww/scripts/control volume {}")
       (label :class "percent" :text "${state.volume}%"))
 
-    (box :class "slider-row" :spacing 9
+    (box :class "slider-row brightness-row" :spacing 9
       (label :class "slider-icon" :text "󰃠")
       (scale :class "control-scale" :hexpand true :min 5 :max 100
         :value {state.brightness} :onchange "~/.config/eww/scripts/control brightness {}")
       (label :class "percent" :text "${state.brightness}%"))
 
-    (box :class "media-card" :orientation "v" :spacing 11 :visible {state.playing}
-      (box :class "media-heading"
-        (label :class "section-title" :hexpand true :halign "start" :text "Now Playing")
-        (label :class "playing-badge" :text "PLAYING"))
-      (box :spacing 14
-        (box :class "album-art"
+    (overlay :class "media-card" :visible {state.playing}
+      (image :class "media-backdrop" :visible {state.album_blur != ""}
+        :path {state.album_blur} :image-width 414 :image-height 136
+        :preserve-aspect-ratio false)
+      (box :class "media-content" :spacing 13
+        (box :class "album-art" :hexpand false :halign "start" :valign "center"
           (image :visible {state.album_art != ""} :path {state.album_art}
-            :image-width 82 :image-height 82 :preserve-aspect-ratio true)
+            :image-width 72 :image-height 72 :preserve-aspect-ratio true)
           (label :visible {state.album_art == ""} :text "󰝚"))
-        (box :orientation "v" :hexpand true :valign "center"
-          (label :class "artist" :halign "start" :limit-width 24
+        (box :orientation "v" :hexpand true :valign "center" :spacing 2
+          (label :class "now-playing-label" :halign "start" :text "NOW PLAYING")
+          (label :class "song" :halign "start" :limit-width 25
+            :show-truncated true :text {state.song})
+          (label :class "artist" :halign "start" :limit-width 25
             :show-truncated true :text {state.artist})
-          (label :class "song" :halign "start" :limit-width 24
-            :show-truncated true :text {state.song})))
-      (box :class "media-controls" :halign "center" :spacing 34
-        (button :onclick "playerctl previous" (label :text "󰒮"))
-        (button :class "play" :onclick "playerctl play-pause"
-          (label :text {state.playing ? "󰏤" : "󰐊"}))
-        (button :onclick "playerctl next" (label :text "󰒭"))))
+          (box :class "media-controls" :halign "start" :spacing 8
+            (button :onclick "playerctl previous" (label :text "󰒮"))
+            (button :class "play" :onclick "playerctl play-pause"
+              (label :text {state.playing ? "󰏤" : "󰐊"}))
+            (button :onclick "playerctl next" (label :text "󰒭"))))))
 
-    (box :class "system-card" :orientation "v" :spacing 5
-      (section-title :text "System")
-      (box :space-evenly true :spacing 12
-        (metric :icon "󰍛" :name "CPU" :value "${state.cpu}%")
-        (metric :icon "󰔏" :name "Temp" :value {state.temp}))
-      (metric :icon "󰘚" :name "RAM" :value {state.ram})
-      (metric :icon "󰋊" :name "Storage" :value {state.storage})
-      (metric :icon "󰔟" :name "Uptime" :value {state.uptime})
-      (box :class "tools" :space-evenly true :spacing 6
-        (button :onclick "~/.config/eww/scripts/open-tool mouse" (label :text "Mouse"))
-        (button :onclick "~/.config/eww/scripts/open-tool screens" (label :text "Screens"))
-        (button :onclick "~/.config/eww/scripts/open-tool bluetooth" (label :text "Bluetooth"))))
-
-    (button :class "notifications" :onclick "eww close quick-settings-panel"
-      (box
-        (label :hexpand true :halign "start" :text "󰂚  Notifications")
-        (label :class "muted" :text "Quiet")))
+    (box :class "tools" :homogeneous true :spacing 7
+      (button :onclick "~/.config/eww/scripts/open-tool mouse" (label :text "󰍽  Mouse"))
+      (button :onclick "~/.config/eww/scripts/open-tool screens" (label :text "󰍹  Displays"))
+      (button :onclick "~/.config/eww/scripts/open-tool sound" (label :text "󰕾  Sound")))
 
     (box :class "footer" :space-evenly true :spacing 6
-      (footer-button :icon "󰌾" :text "Lock"
+      (footer-button :class "lock" :icon "󰌾" :text "Lock"
         :command "~/.config/qtile/scripts/lock-screen")
-      (footer-button :icon "󰤄" :text "Suspend"
+      (footer-button :class "suspend" :icon "󰤄" :text "Suspend"
         :command "systemctl suspend")
-      (footer-button :icon "󰜉" :text "Restart"
+      (footer-button :class "restart" :icon "󰜉" :text "Restart"
         :command "systemctl reboot")
-      (footer-button :icon "󰐥" :text "Power"
+      (footer-button :class "power" :icon "󰐥" :text "Power"
         :command "systemctl poweroff"))))
 
 (defwindow quick-settings-panel
   :monitor 0
-  :geometry (geometry :x "10px" :y "44px" :width "420px" :anchor "top right")
+  :geometry (geometry :x "-24px" :y "66px" :width "450px" :anchor "top right")
   :stacking "fg"
   :exclusive false
   :focusable true
-  (quick-settings))
+  (revealer
+    :reveal panel_reveal
+    :transition "slideleft"
+    :duration "260ms"
+    (quick-settings)))

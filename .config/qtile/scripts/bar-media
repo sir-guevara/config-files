@@ -1,0 +1,42 @@
+#!/bin/sh
+
+mode=${1:-title}
+art_url=$(playerctl metadata --format '{{mpris:artUrl}}' 2>/dev/null)
+
+if [ "$mode" = title ]; then
+    title=$(playerctl metadata --format '{{title}} — {{artist}}' 2>/dev/null)
+    [ -n "$title" ] || exit 0
+    width=27
+    length=$(printf '%s' "$title" | awk '{print length}')
+    if [ "$length" -le "$width" ]; then
+        printf '%s\n' "$title"
+        exit 0
+    fi
+    step=$(date +%s)
+    offset=$((step % (length + 5)))
+    printf '%s     %s' "$title" "$title" | awk -v start="$((offset + 1))" -v width="$width" '{print substr($0, start, width)}'
+    exit 0
+fi
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/qtile-media"
+mkdir -p "$cache_dir"
+case "$art_url" in
+    file://*) source=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.unquote(sys.argv[1][7:]))' "$art_url") ;;
+    http://*|https://*)
+        key=$(printf '%s' "$art_url" | cksum | awk '{print $1}')
+        source="$cache_dir/source-$key"
+        if [ ! -s "$source" ]; then
+            curl -LfsS --max-time 8 "$art_url" -o "$source.tmp" && mv "$source.tmp" "$source"
+        fi
+        ;;
+    *) exit 0 ;;
+esac
+[ -s "$source" ] || exit 0
+key=$(printf '%s' "$art_url" | cksum | awk '{print $1}')
+cover="$cache_dir/cover-$key.png"
+if [ ! -s "$cover" ]; then
+    magick "$source" -thumbnail '34x34^' -gravity center -extent 34x34 \
+      \( +clone -alpha transparent -fill white -draw 'roundrectangle 0,0 33,33 7,7' \) \
+      -alpha set -compose DstIn -composite "$cover" 2>/dev/null || exit 0
+fi
+printf '%s\n' "$cover"

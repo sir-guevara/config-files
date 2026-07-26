@@ -157,7 +157,7 @@ DEFAULTS = {
         "code_editor": "code",
         "file_manager": "thunar",
         "email": "thunderbird",
-        "music": "spotify",
+        "music": str(Path.home() / ".local/bin/cider-launch"),
     },
     "input": {"natural_scroll": True, "disable_middle_paste": True},
     "theme": {

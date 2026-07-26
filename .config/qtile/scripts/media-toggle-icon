@@ -1,0 +1,6 @@
+#!/bin/sh
+
+case "$(playerctl status 2>/dev/null)" in
+    Playing) printf '󰏤' ;;
+    *)       printf '󰐊' ;;
+esac

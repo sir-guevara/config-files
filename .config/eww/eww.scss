@@ -6,107 +6,161 @@ $fg: #ebdbb2;
 $muted: #a89984;
 $yellow: #d79921;
 $yellow-bright: #fabd2f;
+$orange: #fe8019;
 $blue: #458588;
+$blue-bright: #83a598;
 $aqua: #689d6a;
+$aqua-bright: #8ec07c;
+$green: #98971a;
+$green-bright: #b8bb26;
+$purple: #b16286;
+$purple-bright: #d3869b;
 $red: #cc241d;
+$red-bright: #fb4934;
 
 * {
   all: unset;
   font-family: "JetBrainsMono Nerd Font";
-  font-size: 11px;
+  font-size: 13px;
   color: $fg;
 }
 
 .panel {
-  padding: 16px;
-  background: rgba($bg, 0.90);
-  border: 1px solid $border;
-  border-radius: 16px;
+  padding: 18px;
+  background: rgba(#1d2021, 0.92);
+  border: 1px solid rgba($fg, 0.10);
+  border-radius: 18px;
 }
 
-.header { margin: 1px 2px 16px; }
-.title { font-size: 16px; font-weight: 700; }
-.time { color: $muted; }
+.header { margin: 1px 3px 15px; }
+.title { font-size: 20px; font-weight: 700; color: $fg; }
+.time { font-size: 13px; color: $muted; }
 
-.quick-grid { margin-bottom: 8px; }
-.quick-button {
-  min-height: 66px;
-  background: rgba($surface, 0.94);
-  border: 1px solid $border;
+.action-grid { margin-bottom: 10px; }
+.connectivity-card,
+.modes-card {
+  min-height: 112px;
+  background: rgba($surface, 0.78);
+  border: 1px solid rgba($fg, 0.08);
+  border-radius: 15px;
+}
+.connectivity-card { min-width: 222px; padding: 6px; }
+.modes-card { min-width: 142px; padding: 7px; }
+.connect-button { min-height: 46px; padding: 2px 7px; border-radius: 10px; }
+.connect-button:hover,
+.mode-button:hover { background: rgba($surface-alt, 0.72); }
+.mode-button {
+  min-height: 76px;
+  padding: 9px 4px;
+  border-radius: 13px;
+  background: rgba($surface, 0.78);
+  border: 1px solid rgba($fg, 0.07);
+}
+.action-icon-wrap {
+  min-width: 36px; min-height: 36px;
+  border-radius: 9px;
+  background: $surface-alt;
+}
+.action-icon { min-width: 36px; min-height: 36px; font-size: 15px; color: $muted; }
+.action-title { font-size: 12px; font-weight: 700; color: $fg; }
+.action-status { margin-top: 1px; font-size: 10px; color: $muted; }
+.action-chevron { font-size: 19px; color: $border; }
+.action-divider { min-height: 1px; margin: 0 8px 0 43px; background: rgba($fg, 0.07); }
+.active .action-icon { color: $bg; }
+.wifi.active .action-icon-wrap { background: $aqua-bright; }
+.bluetooth.active .action-icon-wrap { background: $blue-bright; }
+.night.active .action-icon-wrap { background: $yellow-bright; }
+.dark.active .action-icon-wrap { background: $purple-bright; }
+.active .action-status { color: $fg; }
+
+.device-link {
+  padding: 10px 12px;
+  margin-bottom: 9px;
   border-radius: 11px;
+  background: rgba($surface, 0.55);
+  color: $muted;
 }
-.quick-button:hover { background: $surface-alt; border-color: $muted; }
-.quick-button.active { background: rgba($surface-alt, 0.98); border-color: $yellow; }
-.quick-button.active .quick-icon { color: $yellow-bright; }
-.quick-icon { font-size: 18px; color: $muted; }
-.quick-label { font-size: 10px; }
-
-.device-link { padding: 7px 10px; margin-bottom: 8px; color: $muted; }
 .device-link:hover { color: $yellow-bright; }
+.network-icon { margin-right: 10px; color: $aqua-bright; font-size: 16px; }
 
 .slider-row {
   min-height: 38px;
   padding: 3px 10px;
   margin-bottom: 7px;
-  background: rgba($surface, 0.72);
-  border-radius: 10px;
+  background: rgba($surface, 0.74);
+  border: 1px solid rgba($fg, 0.06);
+  border-radius: 12px;
 }
 .slider-icon, .icon-button { min-width: 22px; font-size: 15px; color: $muted; }
 .icon-button:hover { color: $yellow-bright; }
-.percent { min-width: 34px; color: $muted; font-size: 10px; }
+.percent { min-width: 40px; color: $muted; font-size: 12px; }
 .control-scale trough { min-height: 6px; border-radius: 6px; background: $surface-alt; }
 .control-scale highlight { min-height: 6px; border-radius: 6px; background: $yellow; }
 .control-scale slider {
   min-width: 14px; min-height: 14px; margin: -5px;
   border-radius: 50%; background: $yellow-bright;
 }
+.volume-row .control-scale highlight { background: $aqua; }
+.volume-row .control-scale slider { background: $aqua-bright; }
+.volume-row .icon-button { color: $aqua-bright; }
+.brightness-row .slider-icon { color: $yellow-bright; }
 
-.media-card, .system-card, .notifications {
+.media-card {
   margin-top: 9px;
-  padding: 13px;
-  background: rgba($surface, 0.90);
-  border: 1px solid $border;
-  border-radius: 12px;
+  background: rgba($surface, 0.68);
+  border: 1px solid rgba($fg, 0.08);
+  border-radius: 13px;
 }
-.section-title { font-weight: 700; margin-bottom: 3px; }
-.playing-badge {
-  padding: 2px 7px;
-  border-radius: 8px;
-  background: $yellow;
-  color: $bg;
-  font-size: 8px;
-  font-weight: 700;
+.media-backdrop { opacity: 0.46; }
+.media-content {
+  min-height: 112px;
+  padding: 12px;
+  border-radius: 13px;
+  background: rgba(#1d2021, 0.52);
 }
 .album-art {
-  min-width: 82px; min-height: 82px;
+  min-width: 72px; min-height: 72px;
   border: 1px solid $border;
-  border-radius: 11px; background: $surface-alt;
+  border-radius: 10px; background: $surface-alt;
 }
-.album-art label { font-size: 30px; color: $muted; }
-.artist { color: $yellow-bright; font-size: 10px; }
-.song { margin-top: 3px; font-size: 13px; font-weight: 700; }
+.album-art label { font-size: 27px; color: $muted; }
+.now-playing-label { color: $orange; font-size: 8px; font-weight: 700; }
+.artist { color: $muted; font-size: 10px; }
+.song { color: $fg; font-size: 14px; font-weight: 700; }
 .media-controls button {
-  min-width: 32px; min-height: 32px;
-  border-radius: 16px;
-  background: $surface-alt;
-  font-size: 17px; color: $muted;
+  min-width: 28px; min-height: 28px;
+  border-radius: 8px;
+  font-size: 16px; color: $fg;
 }
-.media-controls button:hover { color: $yellow-bright; }
-.media-controls .play { background: $yellow; color: $bg; }
+.media-controls button:hover { background: $surface-alt; color: $yellow-bright; }
+.media-controls .play { background: $orange; color: $bg; }
 .media-controls .play:hover { background: $yellow-bright; color: $bg; }
+
 
 .metric { min-height: 22px; }
 .metric-icon { min-width: 18px; color: $aqua; }
-.metric-value, .muted { color: $muted; font-size: 10px; }
-.tools { margin-top: 7px; }
-.tools button { padding: 6px; border-radius: 6px; background: $surface-alt; color: $muted; }
-.tools button:hover { color: $yellow-bright; }
-.notifications:hover { border-color: $yellow; }
-
-.footer { margin-top: 10px; }
-.footer-button { min-height: 52px; border-radius: 10px; background: rgba($surface, 0.90); }
+.metric.cpu .metric-icon { color: $orange; }
+.metric.temp .metric-icon { color: $red-bright; }
+.metric.ram .metric-icon { color: $purple-bright; }
+.metric.storage .metric-icon { color: $blue-bright; }
+.metric.uptime .metric-icon { color: $green-bright; }
+.metric-value, .muted { color: $muted; font-size: 12px; }
+.tools { margin-top: 10px; }
+.tools button { padding: 10px 6px; border-radius: 9px; background: $surface-alt; color: $muted; }
+.tools button:nth-child(1):hover { color: $aqua-bright; border: 1px solid $aqua; }
+.tools button:nth-child(2):hover { color: $blue-bright; border: 1px solid $blue; }
+.tools button:nth-child(3):hover { color: $purple-bright; border: 1px solid $purple; }
+.footer { margin-top: 9px; }
+.footer-button { min-height: 48px; border-radius: 10px; background: rgba($surface, 0.72); }
 .footer-button:hover { background: $surface-alt; color: $yellow-bright; }
 .footer-icon { font-size: 15px; }
-.footer-button:last-child:hover { color: $red; }
+.footer-button.lock .footer-icon { color: $blue-bright; }
+.footer-button.suspend .footer-icon { color: $purple-bright; }
+.footer-button.restart .footer-icon { color: $yellow-bright; }
+.footer-button.power .footer-icon { color: $red-bright; }
+.footer-button.lock:hover { border: 1px solid $blue; }
+.footer-button.suspend:hover { border: 1px solid $purple; }
+.footer-button.restart:hover { border: 1px solid $yellow; }
+.footer-button.power:hover { border: 1px solid $red; }
 
 tooltip { padding: 7px; border-radius: 6px; background: $bg; border: 1px solid $border; }

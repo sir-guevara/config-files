@@ -1,0 +1,8 @@
+! Crisp, comfortable fractional-style scaling for the 2160x1350 X11 panel.
+Xft.dpi: 110
+Xft.autohint: 0
+Xft.hinting: 1
+Xft.hintstyle: hintslight
+Xft.antialias: 1
+Xft.rgba: rgb
+Xcursor.size: 28

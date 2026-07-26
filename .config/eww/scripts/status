@@ -21,7 +21,7 @@ night_on=false
 dark_on=$(~/.config/qtile/scripts/theme-mode status 2>/dev/null || printf 'true')
 
 cpu=$(LC_ALL=C top -bn1 2>/dev/null | awk '/Cpu\(s\)/ {printf "%d", 100 - $8; exit}')
-ram=$(free -h 2>/dev/null | awk '/^Mem:/ {print $3 " / " $2}')
+ram=$(free -b 2>/dev/null | awk '/^Mem:/ {printf "%.1f/%.1fG", $3 / 1073741824, $2 / 1073741824}')
 storage=$(df -h / 2>/dev/null | awk 'NR == 2 {print $3 " / " $2}')
 uptime=$(uptime -p 2>/dev/null | sed 's/^up //; s/ days\?/d/; s/ hours\?/h/; s/ minutes\?/m/; s/,//g')
 temp=$(awk '{printf "%.0f°C", $1 / 1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
@@ -63,9 +63,22 @@ case "$art_url" in
         ;;
 esac
 
-printf '{"time":"%s","volume":%s,"brightness":%s,"wifi_on":%s,"ssid":"%s","bluetooth_on":%s,"night_on":%s,"dark_on":%s,"cpu":%s,"temp":"%s","ram":"%s","storage":"%s","uptime":"%s","artist":"%s","song":"%s","album_art":"%s","playing":%s}\n' \
+album_blur=""
+if [ -s "$album_art" ]; then
+    art_cache="${XDG_CACHE_HOME:-$HOME/.cache}/eww-media"
+    mkdir -p "$art_cache"
+    art_key=$(printf '%s' "$art_url" | cksum | awk '{print $1}')
+    album_blur="$art_cache/blur-blue-$art_key.png"
+    if [ ! -s "$album_blur" ]; then
+        magick "$album_art" -thumbnail '450x150^' -gravity center -extent 450x150 \
+            -blur 0x18 -fill '#458588' -colorize 42 \
+            "$album_blur" 2>/dev/null || album_blur=""
+    fi
+fi
+
+printf '{"time":"%s","volume":%s,"brightness":%s,"wifi_on":%s,"ssid":"%s","bluetooth_on":%s,"night_on":%s,"dark_on":%s,"cpu":%s,"temp":"%s","ram":"%s","storage":"%s","uptime":"%s","artist":"%s","song":"%s","album_art":"%s","album_blur":"%s","playing":%s}\n' \
     "$(json_escape "$time")" "${volume:-0}" "${brightness:-50}" "$wifi_on" \
     "$(json_escape "$ssid")" "$bluetooth_on" "$night_on" "$dark_on" "${cpu:-0}" \
     "$(json_escape "$temp")" "$(json_escape "$ram")" "$(json_escape "$storage")" \
     "$(json_escape "$uptime")" "$(json_escape "$artist")" "$(json_escape "$song")" \
-    "$(json_escape "$album_art")" "$playing"
+    "$(json_escape "$album_art")" "$(json_escape "$album_blur")" "$playing"

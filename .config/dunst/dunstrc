@@ -1,31 +1,43 @@
 [global]
     monitor = 0
     follow = keyboard
-    width = 360
-    height = 110
+    width = 440
+    height = 140
     origin = top-right
-    offset = 10x44
+    offset = 12x66
+    gap_size = 8
     notification_limit = 4
-    padding = 12
-    horizontal_padding = 14
+    padding = 16
+    horizontal_padding = 19
     frame_width = 1
-    frame_color = "#504945"
+    frame_color = "#3c3836"
     separator_color = frame
-    corner_radius = 5
-    transparency = 5
-    font = JetBrainsMono Nerd Font 10
+    corner_radius = 12
+    transparency = 10
+    font = JetBrainsMono Nerd Font 12
     markup = full
     format = "<b>%s</b>\n%b"
     icon_position = left
-    max_icon_size = 40
+    max_icon_size = 52
     sort = yes
     idle_threshold = 120
     timeout = 5
-    background = "#282828"
+    background = "#1d2021"
     foreground = "#ebdbb2"
+    highlight = "#fabd2f"
+    progress_bar = true
+    progress_bar_height = 7
+    progress_bar_frame_width = 0
+    progress_bar_min_width = 160
+    progress_bar_max_width = 300
+    progress_bar_corner_radius = 4
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_current
+    mouse_right_click = close_all
 
 [urgency_low]
-    foreground = "#a89984"
+    frame_color = "#689d6a"
+    foreground = "#8ec07c"
     timeout = 3
 
 [urgency_normal]
@@ -35,3 +47,18 @@
     frame_color = "#fb4934"
     foreground = "#fb4934"
     timeout = 0
+
+[settings]
+    appname = Settings
+    frame_color = "#689d6a"
+    highlight = "#8ec07c"
+
+[music]
+    appname = Cider
+    frame_color = "#b16286"
+    highlight = "#d3869b"
+
+[network]
+    appname = NetworkManager Applet
+    frame_color = "#458588"
+    highlight = "#83a598"

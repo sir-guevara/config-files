@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from pathlib import Path
 
 from libqtile import hook, qtile
 
@@ -76,6 +77,9 @@ def startup_once():
 
 @hook.subscribe.startup
 def startup():
+
+    # Keep fonts and cursors readable on the native 2160x1350 X11 panel.
+    run(["xrdb", "-merge", str(Path.home() / ".Xresources")])
 
     run([script("input-settings")])
 

@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Cider's bundled Electron sandbox is incompatible with this X11 session.
+# Keep the workaround in one place so Qtile and the settings app agree.
+exec /usr/bin/Cider --no-sandbox "$@"

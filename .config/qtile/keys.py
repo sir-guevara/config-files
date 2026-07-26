@@ -14,7 +14,6 @@ from defaults import (
     FILE_MANAGER,
     MUSIC_PLAYER,
     APPLICATION_LAUNCHER,
-    WINDOW_SWITCHER,
     POWER_MENU,
     script,
 )
@@ -54,7 +53,13 @@ keys = [
         desc="Thunderbird",
     ),
 
-    Key([MOD, "shift"], "m", lazy.spawn(MUSIC_PLAYER), desc="Music"),
+    Key(
+        [MOD, "shift"],
+        "m",
+        lazy.group["6"].toscreen(),
+        lazy.spawn(MUSIC_PLAYER),
+        desc="Cider",
+    ),
 
     Key([MOD, "shift"], "c", lazy.spawn(CODE_EDITOR), desc="VS Code"),
 
@@ -64,7 +69,9 @@ keys = [
 
     Key([MOD], "space", lazy.spawn(APPLICATION_LAUNCHER), desc="Application Launcher"),
 
-    Key([MOD], "Tab", lazy.spawn(WINDOW_SWITCHER), desc="Window Switcher"),
+    Key([MOD], "Tab", lazy.layout.next(), desc="Focus Next Window"),
+
+    Key([MOD, "shift"], "Tab", lazy.layout.previous(), desc="Focus Previous Window"),
 
     Key([MOD], "a", lazy.spawn(script("quick-settings")), desc="Quick Settings"),
 
@@ -133,6 +140,12 @@ keys = [
     Key([MOD], "f", lazy.window.toggle_fullscreen()),
 
     Key([MOD, "shift"], "space", lazy.next_layout()),
+
+    Key([MOD, "control"], "space", lazy.prev_layout()),
+
+    Key([MOD], "m", lazy.layout.maximize(), desc="Maximize In Layout"),
+
+    Key([MOD, "shift"], "Return", lazy.layout.swap_main(), desc="Promote To Main"),
 
     # -------------------------------------------------
     # Power Menu

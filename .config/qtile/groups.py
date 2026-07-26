@@ -19,11 +19,13 @@ groups = [
     Group(
         "1",
         label="",
+        layout="Forge",
         matches=[match_classes("Alacritty", "kitty", "org.wezfurlong.wezterm")],
     ),
     Group(
         "2",
         label="󰈹",
+        layout="Forge",
         matches=[
             match_classes(
                 "firefox",
@@ -38,7 +40,8 @@ groups = [
     ),
     Group(
         "3",
-        label="",
+        label="󰨞",
+        layout="Forge",
         matches=[
             match_classes(
                 "Code",
@@ -52,11 +55,13 @@ groups = [
     Group(
         "4",
         label="",
+        layout="Forge",
         matches=[match_classes("Thunar", "Nautilus", "org.gnome.Nautilus", "dolphin")],
     ),
     Group(
         "5",
         label="",
+        layout="Forge",
         matches=[
             match_classes(
                 "thunderbird",
@@ -69,9 +74,10 @@ groups = [
     Group(
         "6",
         label="󰎄",
-        matches=[match_classes("Spotify", "Rhythmbox", "strawberry")],
+        layout="Forge",
+        matches=[match_classes("Cider", "cider", "Spotify", "Rhythmbox", "strawberry")],
     ),
-    Group("7", label=""),
+    Group("7", label="", layout="Forge"),
 ]
 
 

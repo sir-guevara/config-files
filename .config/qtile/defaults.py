@@ -50,7 +50,7 @@ TERMINAL = APP_SETTINGS.get("terminal", "alacritty")
 BROWSER = APP_SETTINGS.get("browser", "firefox --new-window")
 FILE_MANAGER = APP_SETTINGS.get("file_manager", "thunar")
 EMAIL_CLIENT = APP_SETTINGS.get("email", "thunderbird")
-MUSIC_PLAYER = APP_SETTINGS.get("music", "spotify")
+MUSIC_PLAYER = APP_SETTINGS.get("music", "Cider")
 CODE_EDITOR = APP_SETTINGS.get("code_editor", "code")
 
 APPLICATION_LAUNCHER = "rofi -show drun"
@@ -66,9 +66,9 @@ POWER_MENU = str(SCRIPTS_DIR / "power-menu")
 FONT = "JetBrainsMono Nerd Font"
 FONT_BOLD = "JetBrainsMono Nerd Font Bold"
 
-FONT_SIZE = 14
-BAR_ICON_SIZE = 17
-WORKSPACE_ICON_SIZE = 20
+FONT_SIZE = 16
+BAR_ICON_SIZE = 20
+WORKSPACE_ICON_SIZE = 22
 
 
 # ==========================================================
@@ -90,12 +90,12 @@ LAYOUT_RATIO_STEP = 0.05
 # BAR STYLING
 # ==========================================================
 
-BAR_HEIGHT = 34
+BAR_HEIGHT = 48
 
-BAR_MARGIN_TOP = 0
-BAR_MARGIN_RIGHT = 0
+BAR_MARGIN_TOP = 8
+BAR_MARGIN_RIGHT = 12
 BAR_MARGIN_BOTTOM = 0
-BAR_MARGIN_LEFT = 0
+BAR_MARGIN_LEFT = 12
 
 BAR_MARGIN = [
     BAR_MARGIN_TOP,

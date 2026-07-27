@@ -6,7 +6,7 @@ window {
 
 entry {
     width: 650px;
-    placeholder: "Search clipboard history...";
+    placeholder: "Search ...";
 }
 
 listview {

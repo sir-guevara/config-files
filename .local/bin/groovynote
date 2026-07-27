@@ -36,6 +36,15 @@ textview {
 }
 textview text selection { background: #458588; color: #fbf1c7; }
 scrollbar slider { min-width: 5px; min-height: 34px; background: #504945; }
+.help-panel {
+  min-width: 380px; padding: 20px 22px; border-radius: 12px;
+  background: #282828; border: 1px solid #504945;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+.help-title { color: #fabd2f; font-size: 18px; font-weight: 700; }
+.help-section { color: #fe8019; font-weight: 700; }
+.help-body { color: #ebdbb2; font-family: "JetBrainsMono Nerd Font"; font-size: 12px; }
+.help-hint { color: #928374; font-size: 10px; }
 """
 
 
@@ -48,6 +57,7 @@ class GroovyNote(Gtk.Application):
         self.disk_mtime = 0
         self.current_note: Path | None = None
         self.loading = False
+        self.font_size = 14
 
     def do_activate(self) -> None:
         existing = self.get_active_window()
@@ -91,6 +101,18 @@ class GroovyNote(Gtk.Application):
         self.code_tag = self.buffer.create_tag(
             "code", foreground="#8ec07c", background="#282828"
         )
+        self.code_block_tag = self.buffer.create_tag(
+            "code-block", foreground="#ebdbb2", background="#282828"
+        )
+        self.code_keyword_tag = self.buffer.create_tag(
+            "code-keyword", foreground="#fb4934", weight=Pango.Weight.BOLD
+        )
+        self.code_number_tag = self.buffer.create_tag("code-number", foreground="#d3869b")
+        self.code_function_tag = self.buffer.create_tag("code-function", foreground="#83a598")
+        self.code_string_tag = self.buffer.create_tag("code-string", foreground="#b8bb26")
+        self.code_comment_tag = self.buffer.create_tag(
+            "code-comment", foreground="#928374", style=Pango.Style.ITALIC
+        )
         self.quote_tag = self.buffer.create_tag(
             "quote", foreground="#bdae93", style=Pango.Style.ITALIC
         )
@@ -106,7 +128,13 @@ class GroovyNote(Gtk.Application):
         scroller = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         scroller.add_css_class("editor-pane")
         scroller.set_child(self.text_view)
-        self.window.set_child(scroller)
+
+        self.help_panel = self._build_help_panel()
+        self.help_panel.set_visible(False)
+        overlay = Gtk.Overlay()
+        overlay.set_child(scroller)
+        overlay.add_overlay(self.help_panel)
+        self.window.set_child(overlay)
 
         self._prepare_notes()
         self._load_note(self._notes()[0])
@@ -115,12 +143,72 @@ class GroovyNote(Gtk.Application):
         self.window.present()
         self.text_view.grab_focus()
 
+    def _build_help_panel(self) -> Gtk.Widget:
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=9)
+        panel.add_css_class("help-panel")
+        panel.set_halign(Gtk.Align.CENTER)
+        panel.set_valign(Gtk.Align.CENTER)
+
+        title = Gtk.Label(label="󰋖  GroovyNote keys", xalign=0)
+        title.add_css_class("help-title")
+        panel.append(title)
+
+        manual = Gtk.Label(xalign=0, yalign=0)
+        manual.add_css_class("help-body")
+        manual.set_use_markup(True)
+        manual.set_markup(
+            '<span foreground="#fe8019" weight="bold">NOTES</span>\n'
+            'Ctrl O          Open note list\n'
+            'Ctrl N          New note\n'
+            'Ctrl S          Save\n'
+            'Ctrl Shift Del  Move note to trash\n'
+            'Ctrl Q          Save and close\n\n'
+            '<span foreground="#fe8019" weight="bold">WRITING</span>\n'
+            'Ctrl + / -      Increase / decrease font\n'
+            'Ctrl 0          Reset font size\n'
+            'Ctrl T          Insert checkbox\n'
+            'Ctrl Enter      Toggle checkbox\n\n'
+            '<span foreground="#fe8019" weight="bold">MARKDOWN</span>\n'
+            '#  ##  ###      Headings\n'
+            '**text**        Bold\n'
+            '*text*          Italic\n'
+            '`text`          Inline code\n'
+            '```lang         Multiline code block\n'
+            '&gt; text          Quote\n'
+            '- [ ] / - [x]   Checklist'
+        )
+        panel.append(manual)
+
+        hint = Gtk.Label(label="Ctrl H or Esc to close", xalign=0)
+        hint.add_css_class("help-hint")
+        panel.append(hint)
+        return panel
+
+    def _toggle_help(self) -> None:
+        self.help_panel.set_visible(not self.help_panel.get_visible())
+
     def _load_css(self) -> None:
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+        self.font_provider = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            self.font_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+        )
+        self._apply_font_size()
+
+    def _apply_font_size(self) -> None:
+        self.font_provider.load_from_data(
+            f"textview {{ font-size: {self.font_size}px; }}".encode()
+        )
+
+    def _change_font_size(self, amount: int) -> None:
+        self.font_size = max(9, min(30, self.font_size + amount))
+        self._apply_font_size()
 
     def _text(self) -> str:
         return self.buffer.get_text(
@@ -173,6 +261,10 @@ class GroovyNote(Gtk.Application):
             return
         slug = self._note_slug(text)
         if not slug:
+            return
+        if self.current_note.stem == slug or re.fullmatch(
+            rf"{re.escape(slug)}-\d+", self.current_note.stem
+        ):
             return
         destination = NOTES_DIR / f"{slug}.md"
         if destination == self.current_note:
@@ -300,46 +392,57 @@ class GroovyNote(Gtk.Application):
             self.completed_tag, self.checkbox_tag, self.marker_tag,
             self.heading1_tag, self.heading2_tag, self.heading3_tag,
             self.bold_tag, self.italic_tag, self.code_tag, self.quote_tag,
+            self.code_block_tag, self.code_keyword_tag, self.code_string_tag,
+            self.code_comment_tag, self.code_number_tag, self.code_function_tag,
         ):
             self.buffer.remove_tag(tag, start, end)
         line = self.buffer.get_start_iter()
+        in_code_block = False
         while True:
             line_start = line.copy()
             line_end = line.copy()
             if not line_end.ends_line():
                 line_end.forward_to_line_end()
             text = self.buffer.get_text(line_start, line_end, True)
-            if text.startswith("### "):
-                self.buffer.apply_tag(self.heading3_tag, line_start, line_end)
-                self._tag_slice(self.marker_tag, line_start, 0, 4)
-            elif text.startswith("## "):
-                self.buffer.apply_tag(self.heading2_tag, line_start, line_end)
-                self._tag_slice(self.marker_tag, line_start, 0, 3)
-            elif text.startswith("# "):
-                self.buffer.apply_tag(self.heading1_tag, line_start, line_end)
-                self._tag_slice(self.marker_tag, line_start, 0, 2)
-            elif text.startswith("> "):
-                self.buffer.apply_tag(self.quote_tag, line_start, line_end)
-                self._tag_slice(self.marker_tag, line_start, 0, 2)
+            if text.lstrip().startswith("```"):
+                self.buffer.apply_tag(self.code_block_tag, line_start, line_end)
+                self.buffer.apply_tag(self.code_comment_tag, line_start, line_end)
+                in_code_block = not in_code_block
+            elif in_code_block:
+                self.buffer.apply_tag(self.code_block_tag, line_start, line_end)
+                self._style_code_line(text, line_start)
+            else:
+                if text.startswith("### "):
+                    self.buffer.apply_tag(self.heading3_tag, line_start, line_end)
+                    self._tag_slice(self.marker_tag, line_start, 0, 4)
+                elif text.startswith("## "):
+                    self.buffer.apply_tag(self.heading2_tag, line_start, line_end)
+                    self._tag_slice(self.marker_tag, line_start, 0, 3)
+                elif text.startswith("# "):
+                    self.buffer.apply_tag(self.heading1_tag, line_start, line_end)
+                    self._tag_slice(self.marker_tag, line_start, 0, 2)
+                elif text.startswith("> "):
+                    self.buffer.apply_tag(self.quote_tag, line_start, line_end)
+                    self._tag_slice(self.marker_tag, line_start, 0, 2)
 
-            for match in re.finditer(r"\*\*(.+?)\*\*", text):
-                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 2)
-                self._tag_slice(self.bold_tag, line_start, match.start() + 2, match.end() - 2)
-                self._tag_slice(self.marker_tag, line_start, match.end() - 2, match.end())
-            for match in re.finditer(r"(?<!\*)\*([^*]+?)\*(?!\*)", text):
-                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
-                self._tag_slice(self.italic_tag, line_start, match.start() + 1, match.end() - 1)
-                self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
-            for match in re.finditer(r"`([^`]+?)`", text):
-                self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
-                self._tag_slice(self.code_tag, line_start, match.start() + 1, match.end() - 1)
-                self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
-            if text.startswith((UNCHECKED, CHECKED)):
-                checkbox_end = line_start.copy()
-                checkbox_end.forward_chars(2)
-                self.buffer.apply_tag(self.checkbox_tag, line_start, checkbox_end)
-                if text.startswith(CHECKED):
-                    self.buffer.apply_tag(self.completed_tag, checkbox_end, line_end)
+                for match in re.finditer(r"\*\*(.+?)\*\*", text):
+                    self._tag_match(self.marker_tag, line_start, match, 0, 2)
+                    self._tag_slice(self.bold_tag, line_start, match.start() + 2, match.end() - 2)
+                    self._tag_slice(self.marker_tag, line_start, match.end() - 2, match.end())
+                for match in re.finditer(r"(?<!\*)\*([^*]+?)\*(?!\*)", text):
+                    self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
+                    self._tag_slice(self.italic_tag, line_start, match.start() + 1, match.end() - 1)
+                    self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
+                for match in re.finditer(r"`([^`]+?)`", text):
+                    self._tag_slice(self.marker_tag, line_start, match.start(), match.start() + 1)
+                    self._tag_slice(self.code_tag, line_start, match.start() + 1, match.end() - 1)
+                    self._tag_slice(self.marker_tag, line_start, match.end() - 1, match.end())
+                if text.startswith((UNCHECKED, CHECKED)):
+                    checkbox_end = line_start.copy()
+                    checkbox_end.forward_chars(2)
+                    self.buffer.apply_tag(self.checkbox_tag, line_start, checkbox_end)
+                    if text.startswith(CHECKED):
+                        self.buffer.apply_tag(self.completed_tag, checkbox_end, line_end)
             if line_end.is_end():
                 break
             line = line_end.copy()
@@ -347,6 +450,29 @@ class GroovyNote(Gtk.Application):
                 break
         self.style_timer = None
         return GLib.SOURCE_REMOVE
+
+    def _style_code_line(self, text: str, line_start) -> None:
+        keywords = (
+            "and|as|async|await|break|case|catch|class|const|continue|def|do|"
+            "else|elif|enum|export|false|finally|for|from|function|if|import|in|"
+            "interface|let|match|new|none|null|or|pass|raise|return|static|struct|"
+            "switch|throw|true|try|var|while|with|yield"
+        )
+        patterns = (
+            (self.code_keyword_tag, rf"\b(?:{keywords})\b"),
+            (self.code_number_tag, r"\b(?:0x[0-9a-fA-F]+|\d+(?:\.\d+)?)\b"),
+            (self.code_function_tag, r"\b[A-Za-z_]\w*(?=\s*\()"),
+            (self.code_string_tag, r'''(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')'''),
+            (self.code_comment_tag, r"(?:#|//).*?$")
+        )
+        for tag, pattern in patterns:
+            for match in re.finditer(pattern, text):
+                self._tag_slice(tag, line_start, match.start(), match.end())
+
+    def _tag_match(self, tag, line_start, match, start_adjust=0, end_adjust=0) -> None:
+        self._tag_slice(
+            tag, line_start, match.start() + start_adjust, match.start() + end_adjust
+        )
 
     def _tag_slice(self, tag, line_start, start_offset: int, end_offset: int) -> None:
         start = line_start.copy()
@@ -402,8 +528,24 @@ class GroovyNote(Gtk.Application):
     def _key_pressed(self, _controller, keyval, _keycode, state) -> bool:
         ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
         shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        if keyval == Gdk.KEY_Escape and self.help_panel.get_visible():
+            self.help_panel.set_visible(False)
+            return True
+        if ctrl and keyval in (Gdk.KEY_h, Gdk.KEY_H):
+            self._toggle_help()
+            return True
         if ctrl and shift and keyval in (Gdk.KEY_Delete, Gdk.KEY_KP_Delete):
             self._delete_note()
+            return True
+        if ctrl and keyval in (Gdk.KEY_minus, Gdk.KEY_KP_Subtract):
+            self._change_font_size(-1)
+            return True
+        if ctrl and keyval in (Gdk.KEY_plus, Gdk.KEY_equal, Gdk.KEY_KP_Add):
+            self._change_font_size(1)
+            return True
+        if ctrl and keyval in (Gdk.KEY_0, Gdk.KEY_KP_0):
+            self.font_size = 14
+            self._apply_font_size()
             return True
         if ctrl and keyval in (Gdk.KEY_o, Gdk.KEY_O):
             self._open_note_picker()

@@ -1,10 +1,31 @@
 #!/bin/sh
 
 mode=${1:-title}
-art_url=$(playerctl metadata --format '{{mpris:artUrl}}' 2>/dev/null)
+
+# Playerctl's implicit player is often a stale Firefox tab. Prefer a playing
+# Cider instance, then any player which is actively playing.
+player=""
+fallback=""
+while IFS= read -r candidate; do
+    [ -n "$candidate" ] || continue
+    status=$(playerctl -p "$candidate" status 2>/dev/null)
+    case "$candidate:$status" in
+        [Cc]ider*:Playing) player=$candidate; break ;;
+        *:Playing) [ -n "$player" ] || player=$candidate ;;
+        [Cc]ider*:*) [ -n "$fallback" ] || fallback=$candidate ;;
+    esac
+done <<EOF
+$(playerctl -l 2>/dev/null)
+EOF
+
+[ -n "$player" ] || player=$fallback
+[ -n "$player" ] || exit 0
+[ "$(playerctl -p "$player" status 2>/dev/null)" = "Playing" ] || exit 0
+
+art_url=$(playerctl -p "$player" metadata --format '{{mpris:artUrl}}' 2>/dev/null)
 
 if [ "$mode" = title ]; then
-    title=$(playerctl metadata --format '{{title}} — {{artist}}' 2>/dev/null)
+    title=$(playerctl -p "$player" metadata --format '{{title}} — {{artist}}' 2>/dev/null)
     [ -n "$title" ] || exit 0
     width=27
     length=$(printf '%s' "$title" | awk '{print length}')
